@@ -8,6 +8,8 @@ from flask_socketio import SocketIO, emit
 import json
 import sys
 
+from agents.service import career_service
+
 # HYBRID ARCHITECTURE: HTTP (ESP32) -> Server -> SocketIO (Web)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -95,18 +97,26 @@ def chat_with_ai():
     if not message:
         return jsonify({'error': 'Missing message'}), 400
 
-    normalized = message.lower()
-    if 'accuracy' in normalized or 'độ chính xác' in normalized:
-        acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
-        response = f"Độ chính xác hiện tại của mô hình là khoảng {acc_val}% dựa trên dữ liệu huấn luyện."
-    elif 'bước' in normalized or 'quy trình' in normalized:
-        response = "Bạn hoàn thành 2 bước: (1) Nhập kết quả Wire Loop hoặc nhận từ thiết bị ESP32; (2) Chơi đập chuột 10 giây. Sau đó nhấn Phân Tích để xem gợi ý nghề."
-    elif 'nhóm' in normalized or 'group' in normalized:
-        response = "Nhóm A thiên về phản xạ nhanh, Nhóm B chú trọng sự khéo léo, còn Nhóm C phù hợp tư duy phân tích với ít thao tác tay."
-    else:
-        response = "Xin chào! Bạn có thể hỏi tôi về quy trình kiểm tra, kết quả hoặc cách hệ thống tư vấn nghề."
-
-    return jsonify({'reply': response})
+    try:
+        agent_reply = career_service.ask(message, user_id="web_chat_user").text
+        return jsonify({'reply': agent_reply})
+    except Exception as exc:
+        # Fallback to deterministic responses so the UI isn't blocked
+        app.logger.exception("Career agent failed, returning fallback response")
+        normalized = message.lower()
+        if 'accuracy' in normalized or 'độ chính xác' in normalized:
+            acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
+            response = f"Độ chính xác hiện tại của mô hình là khoảng {acc_val}% dựa trên dữ liệu huấn luyện."
+        elif 'bước' in normalized or 'quy trình' in normalized:
+            response = "Bạn hoàn thành 2 bước: (1) Nhập kết quả Wire Loop hoặc nhận từ thiết bị ESP32; (2) Chơi đập chuột 10 giây. Sau đó nhấn Phân Tích để xem gợi ý nghề."
+        elif 'nhóm' in normalized or 'group' in normalized:
+            response = "Nhóm A thiên về phản xạ nhanh, Nhóm B chú trọng sự khéo léo, còn Nhóm C phù hợp tư duy phân tích với ít thao tác tay."
+        else:
+            response = (
+                "Xin chào! Tính năng tư vấn nghề thông minh đang có lỗi tạm thời, "
+                "bạn có thể hỏi về quy trình kiểm tra, kết quả hoặc cách hệ thống tư vấn nghề."
+            )
+        return jsonify({'reply': response, 'fallback': True}), 200
 
 # ===== SOCKET.IO EVENTS (Web Client) =====
 @socketio.on('connect')
