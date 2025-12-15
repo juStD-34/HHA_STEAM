@@ -17,7 +17,7 @@ def _read_report_agent_instruction() -> str:
     """
     base_dir = os.path.dirname(__file__)
     instruction_path = os.path.abspath(
-        os.path.join(base_dir, "..", "instructions", "report_agent.md")
+        os.path.join(base_dir,  "instructions", "report_agent.md")
     )
     try:
         with open(instruction_path, "r", encoding="utf-8") as f:
