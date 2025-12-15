@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
@@ -9,10 +9,12 @@ import json
 import sys
 
 from career_counselor_chat.service import career_service
+import hmac
 
 # HYBRID ARCHITECTURE: HTTP (ESP32) -> Server -> SocketIO (Web)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
+app.config['ACCESS_KEY'] = os.environ.get('APP_ACCESS_KEY', 'enter-demo-key')  # change in production
 # Standard threading mode for Windows compatibility
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
@@ -28,6 +30,35 @@ current_game_state = {
     'timestamp': 0.0
 }
 data_file = 'career_data.csv'
+PROTECTED_PREFIXES = ('/api/', '/predict', '/chat')
+
+def has_access():
+    return session.get('access_granted') is True
+
+@app.before_request
+def enforce_access():
+    if not app.config.get('ACCESS_KEY'):
+        return
+    if request.endpoint in ('static', 'access_gate'):
+        return
+    if has_access():
+        return
+    for prefix in PROTECTED_PREFIXES:
+        if request.path.startswith(prefix):
+            return jsonify({'error': 'Unauthorized'}), 401
+    return redirect(url_for('access_gate', next=request.url))
+
+@app.route('/access', methods=['GET', 'POST'])
+def access_gate():
+    error = None
+    next_url = request.args.get('next') or request.form.get('next') or url_for('index')
+    if request.method == 'POST':
+        provided = (request.form.get('access_key') or '').strip()
+        if provided and hmac.compare_digest(provided, app.config['ACCESS_KEY']):
+            session['access_granted'] = True
+            return redirect(next_url)
+        error = "Mã truy cập không chính xác."
+    return render_template('access.html', error=error, next_url=next_url)
 
 def train_model():
     global model, model_accuracy
