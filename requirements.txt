@@ -4,3 +4,4 @@ scikit-learn
 flask-socketio
 simple-websocket
 google-adk
+gunicorn
