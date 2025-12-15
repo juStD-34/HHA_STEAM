@@ -8,7 +8,7 @@ from flask_socketio import SocketIO, emit
 import json
 import sys
 
-from agents.service import career_service
+from career_counselor_chat.service import career_service
 
 # HYBRID ARCHITECTURE: HTTP (ESP32) -> Server -> SocketIO (Web)
 app = Flask(__name__)
@@ -64,7 +64,7 @@ def predict():
         train_model()
         
     try:
-        data = request.json
+        data = request.json or {}
         time = float(data['time'])
         errors = int(data['errors'])
         score = int(data.get('score', 0))
@@ -133,7 +133,7 @@ def handle_disconnect():
 def game_event_http():
     global current_game_state
     try:
-        data = request.json
+        data = request.json or {}
         print(f"RAW DATA FROM ESP32 (HTTP): {data}") # DEBUG
         
         event = data.get('event')
@@ -154,13 +154,17 @@ def game_event_http():
             current_game_state['timestamp'] = current_time
             
         elif event == 'finish':
-            time_val = float(data.get('time', 0))
-            errors_val = int(data.get('errors', 0))
+            time_val = float(data.get('time') or 0)
+            errors_val = int(data.get('errors') or 0)
             current_game_state['status'] = 'finished'
             current_game_state['time'] = time_val
             current_game_state['errors'] = errors_val
             current_game_state['timestamp'] = current_time
             print(f">>> GAME FINISHED: T={time_val}, E={errors_val}")
+            career_service.update_test_metrics(
+                user_id="web_chat_user",
+                ingenuous={"time": time_val, "mistake": errors_val},
+            )
 
         # Broadcast to Web immediately
         socketio.emit('game_update', current_game_state)
@@ -169,6 +173,22 @@ def game_event_http():
     except Exception as e:
         print(f"Error processing ESP32 data: {e}")
         return jsonify({"error": str(e)}), 400
+
+
+@app.route('/api/reflex_result', methods=['POST'])
+def reflex_result():
+    """Endpoint to record the ReflexTest metrics reported by the client/ESP32."""
+    try:
+        data = request.json or {}
+        reflex_time = float(data.get('time') or 0.0)
+        quantity = int(data.get('quantity') or 0)
+        career_service.update_test_metrics(
+            user_id="web_chat_user",
+            reflex={"time": reflex_time, "quantity": quantity},
+        )
+        return jsonify({"status": "ok"})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 400
 
 if __name__ == '__main__':
     train_model()

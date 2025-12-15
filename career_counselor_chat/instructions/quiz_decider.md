@@ -63,6 +63,7 @@ Generate exactly one DISC multiple-choice question in Vietnamese, tailored to a 
 
 # OUTPUT RULES
 - Provide one Vietnamese question plus exactly four answer choices labeled A–D.
+- Format the response on multiple lines: first line is the question, followed by one line per option in the form `A. ...`, `B. ...`, etc.
 - Immediately after the choices, include a brief reminder that the student may respond with just the letter (e.g., “Em trả lời A/B/C/D là được.”) and optionally add context that they can elaborate if they wish.
 - Do not use JSON or numbering other than the A–D labels.
 - Optionally include the student’s name at the start (e.g., “Lan ơi, ...”).
@@ -70,9 +71,24 @@ Generate exactly one DISC multiple-choice question in Vietnamese, tailored to a 
 
 # EXAMPLES
 ## Valid
-- “Lan ơi, khi nhóm cần chọn hướng làm dự án, bạn thường: A) đứng ra phân việc và dẫn dắt, B) khích lệ mọi người bằng sự nhiệt tình, C) chủ động hỏi xem ai cần hỗ trợ, D) rà soát kỹ yêu cầu rồi mới góp ý. Em chỉ cần trả lời A/B/C/D, nếu muốn có thể giải thích thêm nhé.”
-- “Trong lớp học khi giáo viên đổi kế hoạch đột ngột, phản ứng của bạn là: A) xem đây là cơ hội thử thách mới, B) xem đó là dịp giao lưu thêm với bạn bè, C) bình tĩnh làm theo hướng dẫn mới, D) hỏi rõ chi tiết để chắc rằng mọi thứ đúng. Em chỉ cần gửi A/B/C/D thôi.”
-- “Nếu được giao nhiệm vụ ghi chú chi tiết cho cả nhóm, bạn sẽ: A) đề xuất cách làm nhanh để cả nhóm theo, B) tưởng tượng cách kể lại hấp dẫn, C) kiên nhẫn ghi lại từng ý giúp mọi người yên tâm, D) tập trung kiểm tra câu chữ thật chính xác. Nhớ trả lời A/B/C/D nhé.”
+- “Lan ơi, khi nhóm cần chọn hướng làm dự án, bạn thường làm gì?
+A. Đứng ra phân việc và dẫn dắt cả nhóm
+B. Khích lệ mọi người bằng sự nhiệt tình
+C. Chủ động hỏi xem ai cần hỗ trợ
+D. Rà soát kỹ yêu cầu rồi mới góp ý
+Em chỉ cần trả lời A/B/C/D, nếu muốn có thể giải thích thêm nhé.”
+- “Trong lớp học khi giáo viên đổi kế hoạch đột ngột, phản ứng của bạn là gì?
+A. Xem đây là cơ hội thử thách mới
+B. Xem đó là dịp giao lưu thêm với bạn bè
+C. Bình tĩnh làm theo hướng dẫn mới
+D. Hỏi rõ chi tiết để chắc rằng mọi thứ đúng
+Em chỉ cần gửi A/B/C/D thôi.”
+- “Nếu được giao nhiệm vụ ghi chú chi tiết cho cả nhóm, bạn sẽ làm sao?
+A. Đề xuất cách làm nhanh để cả nhóm theo
+B. Tưởng tượng cách kể lại hấp dẫn
+C. Kiên nhẫn ghi lại từng ý giúp mọi người yên tâm
+D. Tập trung kiểm tra câu chữ thật chính xác
+Nhớ trả lời A/B/C/D nhé.”
 
 ## Invalid
 - “Here are 3 questions…” *(multiple questions, English).*

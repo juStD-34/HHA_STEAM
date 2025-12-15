@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from logging import getLogger
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from google.adk.runners import (
     InMemorySessionService,
@@ -40,6 +40,7 @@ class CareerCounselorService:
         self._app_name = app_name
         self._agent = agent or build_agent()
         self._session_service = session_service or InMemorySessionService()
+        self._test_metrics: Dict[str, Dict[str, Optional[Dict[str, Any]]]] = {}
 
     async def ask_async(
         self,
@@ -58,10 +59,12 @@ class CareerCounselorService:
             app_name=self._app_name,
             session_service=self._session_service,
         )
-        user_content = types.Content(
-            role="user",
-            parts=[types.Part(text=message)],
-        )
+        context_text = self._build_test_context(user_id)
+        parts = []
+        if context_text:
+            parts.append(types.Part(text=context_text))
+        parts.append(types.Part(text=message))
+        user_content = types.Content(role="user", parts=parts)
 
         final_text: Optional[str] = None
         final_event = None
@@ -121,6 +124,51 @@ class CareerCounselorService:
                 session_id=session_key,
             )
         return session
+
+    def update_test_metrics(
+        self,
+        *,
+        user_id: str,
+        ingenuous: Optional[Dict[str, Any]] = None,
+        reflex: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Store the latest Ingeous/Reflex test metrics for downstream prompts."""
+        payload = self._test_metrics.setdefault(
+            user_id, {"ingenuous": None, "reflex": None}
+        )
+        if ingenuous:
+            payload["ingenuous"] = {
+                "time": float(ingenuous.get("time", 0.0) or 0.0),
+                "mistake": int(ingenuous.get("mistake", 0) or 0),
+            }
+        if reflex:
+            payload["reflex"] = {
+                "time": float(reflex.get("time", 0.0) or 0.0),
+                "quantity": int(reflex.get("quantity", 0) or 0),
+            }
+
+    def _build_test_context(self, user_id: str) -> Optional[str]:
+        metrics = self._test_metrics.get(user_id)
+        if not metrics:
+            return None
+        lines = []
+        ingenuous = metrics.get("ingenuous")
+        reflex = metrics.get("reflex")
+        if ingenuous:
+            lines.append(
+                "IngeousTest: "
+                f"time={ingenuous['time']:.2f}s, mistake={ingenuous['mistake']}"
+            )
+        if reflex:
+            lines.append(
+                "ReflexTest: "
+                f"time={reflex['time']:.2f}s, quantity={reflex['quantity']}"
+            )
+        if not lines:
+            return None
+        return (
+            "SYSTEM CONTEXT (test metrics for ReportAgent):\n" + "\n".join(lines)
+        )
 
 
 def _extract_text_from_event(event) -> str:
