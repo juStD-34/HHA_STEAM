@@ -151,7 +151,7 @@
 <body class="min-h-screen bg-[#0f172a] p-0 m-0">
 
     <!-- Hero Section (Full Width) -->
-    <div class="relative w-full h-[65vh] min-h-[500px] overflow-hidden group border-b border-white/10">
+    <div class="relative w-full h-screen min-h-[650px] overflow-hidden group border-b border-white/10">
         <!-- Background Image -->
         <div class="absolute inset-0">
             <img src="{{ url_for('static', filename='img/school_overview.jpg') }}" alt="THPT A Hải Hậu"
@@ -179,27 +179,16 @@
                     </span>
                 </h1>
 
-                <p class="text-slate-100 max-w-2xl mx-auto mb-8 text-lg font-medium leading-relaxed drop-shadow-lg">
-                    Hệ thống phân tích tố chất học sinh thông qua: <br class="hidden md:block">
-                    <span class="text-blue-300 font-bold">Độ Khéo Léo (Wire Loop)</span> & <span
-                        class="text-yellow-300 font-bold">Tốc Độ Phản Xạ</span>
-                </p>
-
-                <div
-                    class="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 text-sm font-bold backdrop-blur-md hover:bg-slate-900/80 transition-colors cursor-default">
-                    <span class="relative flex h-3 w-3">
-                        <span
-                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                    Độ chính xác AI: {{ accuracy }}%
-                </div>
+                <button onclick="scrollToTests()"
+                    class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-8 py-3 rounded-full shadow-lg shadow-emerald-500/30 transition-transform hover:-translate-y-0.5">
+                    Bắt đầu khám phá bản thân
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Main Content Container -->
-    <div class="max-w-4xl mx-auto space-y-8 p-4 md:p-8 mt-8 relative z-20">
+    <div id="test-section" class="max-w-4xl mx-auto space-y-8 p-4 md:p-8 mt-8 relative z-20">
 
         <!-- Rules Section -->
         <div class="card p-6 rounded-2xl fade-in">
@@ -408,6 +397,53 @@
                 </div>
             </div>
         </div>
+
+        <!-- Consultation Section -->
+        <div class="card p-6 rounded-2xl fade-in border-l-4 border-emerald-500 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black">3</div>
+            <div class="flex items-center gap-4 mb-6 relative z-10">
+                <div class="step-number bg-gradient-to-br from-emerald-500 to-teal-500 !shadow-emerald-500/50">3</div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Trò Chuyện Với Chuyên Gia</h2>
+                    <p class="text-slate-400 text-sm">Đặt câu hỏi và nhận tư vấn cá nhân hóa</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4 relative z-10">
+                <div class="space-y-4">
+                    <div class="chat-message bot">
+                        <div class="chat-avatar">🤖</div>
+                        <div class="chat-bubble bg-slate-900/80 border border-slate-700">Chào bạn! Bạn muốn phát triển kỹ năng nào sau bài kiểm tra?</div>
+                    </div>
+                    <div class="chat-message user">
+                        <div class="chat-bubble bg-blue-600 text-white border-0">Em muốn biết ngành nào phù hợp với khả năng phản xạ tốt.</div>
+                        <div class="chat-avatar">🧑</div>
+                    </div>
+                    <div class="chat-message bot">
+                        <div class="chat-avatar">🤖</div>
+                        <div class="chat-bubble bg-slate-900/80 border border-slate-700">Những ngành như kỹ thuật điều khiển, logistics, điều phối viên là lựa chọn tuyệt vời!</div>
+                    </div>
+                </div>
+                <div class="flex flex-col justify-between bg-slate-900/50 border border-slate-700 rounded-2xl p-5">
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                        Hãy trò chuyện với chuyên gia AI để nhận phân tích sâu hơn về kết quả của bạn, lộ trình nghề nghiệp,
+                        cũng như những kỹ năng cần rèn luyện tiếp theo.
+                    </p>
+                    <button onclick="openChatModal()"
+                        class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all">
+                        Mở khung trò chuyện
+                    </button>
+                </div>
+            </div>
+        </div>
+<!-- 
+        <div class="flex items-center gap-3 text-sm text-emerald-300 bg-slate-900/50 border border-emerald-500/20 rounded-xl px-4 py-3">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            Độ chính xác AI: {{ accuracy }}%
+        </div> -->
 
         <!-- Final Result Section -->
         <button onclick="getFinalAdvice()" id="get-result-btn"
@@ -721,6 +757,13 @@
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+
+        function scrollToTests() {
+            const section = document.getElementById('test-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
             }
         }
 
