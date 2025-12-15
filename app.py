@@ -221,6 +221,16 @@ def reflex_result():
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
+@app.route('/health')
+def health_check():
+    """Basic health check endpoint for load balancers."""
+    status = {
+        "status": "ok",
+        "model_loaded": model is not None,
+        "game_state": current_game_state.get('status'),
+    }
+    return jsonify(status), 200
+
 if __name__ == '__main__':
     train_model()
     # Use standard app.run() which works perfectly with threading mode
