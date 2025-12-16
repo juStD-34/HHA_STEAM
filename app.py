@@ -216,6 +216,7 @@ def reflex_result():
     """Endpoint to record the ReflexTest metrics reported by the client/ESP32."""
     try:
         data = request.json or {}
+        app.logger.info("Reflex result payload: %s", data)
         reflex_time = float(data.get('time') or 0.0)
         quantity = int(data.get('quantity') or 0)
         career_service.update_test_metrics(

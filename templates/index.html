@@ -58,38 +58,62 @@
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
 
-        /* Whack-a-Mole Styles */
-        .hole {
-            background-color: #334155;
-            border-radius: 50%;
+        /* Reflex Visual Demo (Punch Board) */
+        .punch-board{
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            padding: 18px;
+            border-radius: 18px;
+            background: radial-gradient(120% 120% at 30% 20%, rgba(59,130,246,0.12), rgba(2,6,23,0.0)),
+                        rgba(2,6,23,0.35);
+            border: 1px solid rgba(148,163,184,0.25);
+            box-shadow: inset 0 10px 24px rgba(0,0,0,0.35);
+        }
+        .punch-hole{
             position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 999px;
+            background: rgba(51,65,85,0.9);
+            border: 1px solid rgba(148,163,184,0.18);
+            box-shadow: inset 0 12px 0 rgba(0,0,0,0.45);
             overflow: hidden;
             cursor: pointer;
-            box-shadow: inset 0 8px 0 0 rgba(0, 0, 0, 0.5);
+            transform: translateZ(0);
+            transition: transform 120ms ease, box-shadow 120ms ease;
         }
-
-        .mole {
-            width: 80%;
-            height: 80%;
-            background-color: #ef4444;
-            border-radius: 50%;
-            position: absolute;
-            top: 100%;
-            left: 10%;
-            transition: top 0.1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        .punch-hole:active{
+            transform: scale(0.97);
         }
-
-        .mole.up {
-            top: 10%;
+        .punch-mouse{
+            position:absolute;
+            left: 50%;
+            top: 120%;
+            transform: translate(-50%, 0);
+            font-size: 28px;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
+            transition: top 110ms ease;
+            user-select:none;
+            pointer-events:none;
         }
-
-        .mole::after {
-            content: '🐭';
-            font-size: 24px;
+        .punch-hole.up .punch-mouse{
+            top: 18%;
+        }
+        .punch-hole.hit{
+            box-shadow: inset 0 12px 0 rgba(0,0,0,0.55), 0 0 0 6px rgba(234,179,8,0.15);
+        }
+        .punch-hole.hit::after{
+            content:'';
+            position:absolute;
+            inset:-10%;
+            border-radius:999px;
+            border: 2px solid rgba(234,179,8,0.35);
+            animation: punchRipple 380ms ease-out forwards;
+        }
+        @keyframes punchRipple{
+            from{ transform: scale(0.6); opacity: 0.9;}
+            to{ transform: scale(1.15); opacity: 0;}
         }
 
         .result-highlight {
@@ -209,10 +233,9 @@
                 <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
                     <h3 class="font-bold text-yellow-500 mb-2">Bài 2: Tốc Độ Phản Xạ</h3>
                     <p class="text-sm text-slate-300 leading-relaxed">
-                        Chơi game <strong>Đập Chuột</strong> ngay trên màn hình. Chuột sẽ xuất hiện ngẫu nhiên trong 10
-                        giây.
+                        Nhập kết quả <strong>phản xạ (Đập Chuột)</strong> theo thời gian và số lần đập (thủ công).
                         <br>
-                        ⚡ <strong>Mục tiêu:</strong> Đập trúng càng nhiều chuột càng tốt.
+                        ⚡ <strong>Mục tiêu:</strong> Ghi nhận tốc độ và số lần thao tác để phục vụ phân tích.
                     </p>
                 </div>
             </div>
@@ -304,95 +327,75 @@
             </div>
         </div>
 
-        <!-- Game 2: Whack-a-Mole -->
+        <!-- Game 2: Reflex (Typing Only) -->
         <div class="card p-6 rounded-2xl fade-in border-l-4 border-yellow-500 relative overflow-hidden" id="step2-card">
             <div class="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black">2</div>
             <div class="flex items-center gap-4 mb-6 relative z-10">
                 <div class="step-number bg-gradient-to-br from-yellow-500 to-orange-500 !shadow-yellow-500/50">2</div>
                 <div>
                     <h2 class="text-xl font-bold text-white">Kiểm Tra Phản Xạ (Đập Chuột)</h2>
-                    <p class="text-slate-400 text-sm">Nhấn "Bắt Đầu" và chơi trong 10 giây</p>
+                    <p class="text-slate-400 text-sm">Nhập kết quả thủ công (không cần chơi game)</p>
                 </div>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-6">
-                <!-- Game Board -->
-                <div class="flex-1">
-                    <div
-                        class="grid grid-cols-3 gap-3 bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-[300px] mx-auto">
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="0">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="1">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="2">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="3">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="4">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="5">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="6">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="7">
-                            <div class="mole"></div>
-                        </div>
-                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="8">
-                            <div class="mole"></div>
-                        </div>
+            <div class="grid md:grid-cols-2 gap-6 items-start">
+                <!-- Left: Visual demo only (no scoring) -->
+                <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <span>🖱️</span> Mô phỏng "chuột nhô lên"
+                        </p>
+                        <span class="text-xs text-slate-400">Chỉ để minh hoạ</span>
                     </div>
+
+                    <div id="punch-board" class="punch-board select-none">
+                        <!-- 9 circles -->
+                        <button type="button" class="punch-hole" aria-label="hole 1"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 2"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 3"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 4"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 5"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 6"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 7"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 8"><span class="punch-mouse">🐭</span></button>
+                        <button type="button" class="punch-hole" aria-label="hole 9"><span class="punch-mouse">🐭</span></button>
+                    </div>
+
+                    <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+                        Bạn có thể click vào các ô để xem hiệu ứng “đập”. Kết quả thật sẽ lấy ở phần nhập bên phải.
+                    </p>
                 </div>
 
-                <!-- Info & Controls -->
-                <div class="flex-1 flex flex-col justify-center space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-slate-900/50 p-3 rounded-lg text-center border border-slate-700">
-                            <span class="block text-xs text-slate-400">Thời gian</span>
-                            <span id="game-time" class="text-2xl font-bold text-blue-400">10</span>s
+                <!-- Right: Typing only -->
+                <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 space-y-3">
+                    <p class="text-sm text-slate-200 font-semibold">Nhập kết quả thủ công:</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Thời gian (giây)</label>
+                            <input type="number" id="reflex-time-input"
+                                class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
+                                placeholder="10">
                         </div>
-                        <div class="bg-slate-900/50 p-3 rounded-lg text-center border border-slate-700">
-                            <span class="block text-xs text-slate-400">Điểm Số</span>
-                            <span id="game-score" class="text-2xl font-bold text-yellow-500">0</span>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Số chuột đã đập</label>
+                            <input type="number" id="reflex-quantity-input"
+                                class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
+                                placeholder="0">
                         </div>
                     </div>
-                    <button onclick="startGame()" id="start-game-btn"
-                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-yellow-500/20 active:scale-95">
-                        Bắt Đầu Chơi
-                    </button>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <button onclick="submitReflexResult()" id="reflex-submit-btn"
+                            class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-semibold px-5 py-3 rounded-lg transition shadow-lg shadow-yellow-500/30 w-full sm:w-auto text-center">
+                            Gửi kết quả phản xạ
+                        </button>
+                        <p id="step2-api-message" class="hidden text-sm text-emerald-400">Đã cập nhật kết quả.</p>
+                    </div>
+
                     <div id="step2-status"
                         class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
-                        <span>✅ Đã hoàn thành!</span>
-                    </div>
-                    <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700 space-y-3">
-                        <p class="text-sm text-slate-300 font-semibold">Hoặc nhập kết quả thủ công:</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Thời gian (giây)</label>
-                                <input type="number" id="reflex-time-input"
-                                    class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
-                                    placeholder="10">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Số chuột đã đập</label>
-                                <input type="number" id="reflex-quantity-input"
-                                    class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
-                                    placeholder="0">
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <button onclick="submitReflexResult()" id="reflex-submit-btn"
-                                class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-semibold px-5 py-3 rounded-lg transition shadow-lg shadow-yellow-500/30 w-full sm:w-auto text-center">
-                                Gửi kết quả phản xạ
-                            </button>
-                            <p id="step2-api-message" class="hidden text-sm text-emerald-400">Đã cập nhật kết quả.</p>
-                        </div>
+                        <span>✅ Đã ghi nhận kết quả Bước 2!</span>
                     </div>
                 </div>
             </div>
@@ -652,59 +655,49 @@
             updateStep1Status(false);
         }
 
-        // --- Whack-a-Mole Game Logic (Step 2) ---
-        const holes = document.querySelectorAll('.hole');
-        const scoreBoard = document.querySelector('#game-score');
-        const timeDisplay = document.querySelector('#game-time');
-        const startBtn = document.querySelector('#start-game-btn');
-        let lastHole, timeUp = false, score = 0, timeLeft = 10, countdownInterval;
+        // --- Reflex Visual Demo (Step 2 left panel) ---
+        function initPunchBoard() {
+            const board = document.getElementById('punch-board');
+            if (!board) return;
 
-        function randomTime(min, max) { return Math.round(Math.random() * (max - min) + min); }
-        function randomHole(holes) {
-            const idx = Math.floor(Math.random() * holes.length);
-            const hole = holes[idx];
-            if (hole === lastHole) return randomHole(holes);
-            lastHole = hole;
-            return hole;
+            const holes = Array.from(board.querySelectorAll('.punch-hole'));
+            let lastIdx = -1;
+
+            function randomIdx() {
+                if (holes.length === 1) return 0;
+                let i = Math.floor(Math.random() * holes.length);
+                if (i === lastIdx) i = (i + 1) % holes.length;
+                lastIdx = i;
+                return i;
+            }
+
+            // Random "mouse up" animation loop (visual only)
+            setInterval(() => {
+                holes.forEach(h => h.classList.remove('up'));
+                const i = randomIdx();
+                holes[i].classList.add('up');
+                // auto hide after a short time
+                setTimeout(() => holes[i].classList.remove('up'), 550);
+            }, 700);
+
+            // Click = punch effect (visual only)
+            holes.forEach((hole) => {
+                hole.addEventListener('mousedown', (e) => {
+                    if (!e.isTrusted) return;
+                    hole.classList.add('hit');
+                    setTimeout(() => hole.classList.remove('hit'), 220);
+                });
+                hole.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!e.isTrusted) return;
+                    hole.classList.add('hit');
+                    setTimeout(() => hole.classList.remove('hit'), 220);
+                }, { passive: false });
+            });
         }
-        function peep() {
-            const time = randomTime(400, 900);
-            const hole = randomHole(holes);
-            const mole = hole.querySelector('.mole');
-            mole.classList.add('up');
-            setTimeout(() => {
-                mole.classList.remove('up');
-                if (!timeUp) peep();
-            }, time);
-        }
-        function startGame() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            scoreBoard.textContent = 0; timeDisplay.textContent = 10;
-            timeUp = false; score = 0; timeLeft = 10;
 
-            startBtn.disabled = true; startBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            startBtn.innerText = "Đang chơi...";
-            document.getElementById('step2-status').classList.add('hidden');
-
-            peep();
-
-            countdownInterval = setInterval(() => {
-                timeLeft--;
-                timeDisplay.textContent = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    timeUp = true;
-                    startBtn.disabled = false; startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    startBtn.innerText = "Chơi Lại";
-
-                    whackResult.score = score;
-                    whackResult.done = true;
-                    document.getElementById('step2-status').classList.remove('hidden');
-                    saveReflexResult(10, score).catch(err => console.warn('Reflex sync failed', err));
-                    checkAllDone();
-                }
-            }, 1000);
-        }
+        // kick off demo
+        initPunchBoard();
 
         async function saveReflexResult(timeVal, quantityVal) {
             const response = await fetch('/api/reflex_result', {
@@ -717,20 +710,6 @@
                 throw new Error(data.error || 'Không thể lưu kết quả phản xạ.');
             }
         }
-
-        function bonk(e) {
-            if (!e.isTrusted) return;
-            const mole = this.querySelector('.mole');
-            if (mole.classList.contains('up')) {
-                score++;
-                mole.classList.remove('up');
-                scoreBoard.textContent = score;
-                this.classList.add('scale-95');
-                setTimeout(() => this.classList.remove('scale-95'), 100);
-            }
-        }
-        holes.forEach(hole => hole.addEventListener('mousedown', bonk));
-        holes.forEach(hole => hole.addEventListener('touchstart', (e) => { e.preventDefault(); bonk.call(hole, e); }));
 
         async function submitReflexResult() {
             const btn = document.getElementById('reflex-submit-btn');
@@ -747,8 +726,6 @@
                 await saveReflexResult(timeVal, quantityVal);
                 whackResult.score = quantityVal;
                 whackResult.done = true;
-                scoreBoard.textContent = quantityVal;
-                timeDisplay.textContent = timeVal;
                 document.getElementById('step2-status').classList.remove('hidden');
                 checkAllDone();
                 setInlineMessage(step2MessageEl, "✅ Đã gửi kết quả phản xạ!", false);
