@@ -5,3 +5,5 @@ flask-socketio
 simple-websocket
 google-adk
 gunicorn
+python-dotenv
+google-cloud-aiplatform

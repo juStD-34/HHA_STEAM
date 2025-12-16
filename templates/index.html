@@ -518,7 +518,7 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script> -->
     <script>
         // State
         let wireLoopResult = { time: 0, errors: 0, done: false };
@@ -537,46 +537,46 @@
         const reflexQuantityInput = document.getElementById('reflex-quantity-input');
 
         // --- Socket.IO Connection (Step 1) ---
-        const socket = io();
+        // const socket = io();
 
-        socket.on('connect', () => {
-            console.log('Connected to WebSocket server');
-        });
+        // socket.on('connect', () => {
+        //     console.log('Connected to WebSocket server');
+        // });
 
-        socket.on('disconnect', () => {
-            console.log('Disconnected from server');
-        });
+        // socket.on('disconnect', () => {
+        //     console.log('Disconnected from server');
+        // });
 
-        socket.on('game_update', (data) => {
-            if (data && data.status !== 'idle') {
-                if (data.status === 'playing') {
-                    document.getElementById('live-monitor').classList.remove('hidden');
-                    document.getElementById('step1-manual-form').classList.remove('hidden');
-                    document.getElementById('step1-result-display').classList.add('hidden');
-
-                    document.getElementById('live-time').innerText = data.time.toFixed(1);
-                    document.getElementById('live-errors').innerText = data.errors;
-                }
-                else if (data.status === 'finished' && data.timestamp > lastTimestamp) {
-                    lastTimestamp = data.timestamp;
-
-                    // Lock Step 1
-                    document.getElementById('input-time').value = data.time;
-                    document.getElementById('input-errors').value = data.errors;
-
-                    document.getElementById('display-time').innerText = data.time;
-                    document.getElementById('display-errors').innerText = data.errors;
-                    wireLoopResult.time = data.time;
-                    wireLoopResult.errors = data.errors;
-
-                    document.getElementById('live-monitor').classList.add('hidden');
-                    document.getElementById('step1-manual-form').classList.add('hidden');
-                    document.getElementById('step1-result-display').classList.remove('hidden');
-
-                    updateStep1Status(true);
-                }
-            }
-        });
+        // socket.on('game_update', (data) => {
+        //     if (data && data.status !== 'idle') {
+        //         if (data.status === 'playing') {
+        //             document.getElementById('live-monitor').classList.remove('hidden');
+        //             document.getElementById('step1-manual-form').classList.remove('hidden');
+        //             document.getElementById('step1-result-display').classList.add('hidden');
+        //
+        //             document.getElementById('live-time').innerText = data.time.toFixed(1);
+        //             document.getElementById('live-errors').innerText = data.errors;
+        //         }
+        //         else if (data.status === 'finished' && data.timestamp > lastTimestamp) {
+        //             lastTimestamp = data.timestamp;
+        //
+        //             // Lock Step 1
+        //             document.getElementById('input-time').value = data.time;
+        //             document.getElementById('input-errors').value = data.errors;
+        //
+        //             document.getElementById('display-time').innerText = data.time;
+        //             document.getElementById('display-errors').innerText = data.errors;
+        //             wireLoopResult.time = data.time;
+        //             wireLoopResult.errors = data.errors;
+        //
+        //             document.getElementById('live-monitor').classList.add('hidden');
+        //             document.getElementById('step1-manual-form').classList.add('hidden');
+        //             document.getElementById('step1-result-display').classList.remove('hidden');
+        //
+        //             updateStep1Status(true);
+        //         }
+        //     }
+        // });
 
         // Manual Input Listener Step 1
         const inputTime = document.getElementById('input-time');

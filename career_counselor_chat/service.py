@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+import os
 from logging import getLogger
 from typing import Optional, Dict, Any
 
@@ -13,10 +14,11 @@ from google.adk.runners import (
 )
 
 from .root_agent import build_agent
+from vertexai import init as vertexai_init
 
 logger = getLogger(__name__)
 
-DEFAULT_APP_NAME = "career_counselor_chat"
+DEFAULT_APP_NAME = "agents"
 
 
 @dataclass(slots=True)
@@ -41,6 +43,38 @@ class CareerCounselorService:
         self._agent = agent or build_agent()
         self._session_service = session_service or InMemorySessionService()
         self._test_metrics: Dict[str, Dict[str, Optional[Dict[str, Any]]]] = {}
+        self._ensure_vertex_ai()
+
+    def _ensure_vertex_ai(self) -> None:
+        """Initialize Vertex AI if GOOGLE_CLOUD_* env vars are provided."""
+        project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        location = os.getenv("GOOGLE_CLOUD_LOCATION")
+        if not project or not location:
+            logger.warning(
+                "Skipping Vertex AI init because GOOGLE_CLOUD_PROJECT/LOCATION missing",
+                extra={"component": "career_counseling"},
+            )
+            return
+        try:
+            vertexai_init(project=project, location=location)
+            logger.info(
+                "Initialized Vertex AI context",
+                extra={
+                    "component": "career_counseling",
+                    "project": project,
+                    "location": location,
+                },
+            )
+        except Exception as exc:  # pragma: no cover - env specific
+            logger.error(
+                "Vertex AI init failed",
+                extra={
+                    "component": "career_counseling",
+                    "project": project,
+                    "location": location,
+                    "error": str(exc),
+                },
+            )
 
     async def ask_async(
         self,

@@ -8,7 +8,7 @@ Generate exactly one DISC multiple-choice question in Vietnamese, tailored to a 
 
 # GENERAL GUIDELINES
 ## Tone and Style
-- **Mandatory:** Output exactly **one** question in Vietnamese; never use English or JSON.
+- **Mandatory:** Output exactly **one** multiple choice question in Vietnamese; never use English or JSON.
 - Keep the tone joyful, calm, and encouraging; avoid words such as “sai”, “vấn đề”, “không thể”.
 - Use language appropriate for high-school students and include their name if known.
 - Present the question as four short answer choices labeled A/B/C/D that reflect the DISC dimension being probed; do not include unlabeled bullet lists or free-form answer suggestions.

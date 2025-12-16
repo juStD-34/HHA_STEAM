@@ -11,7 +11,7 @@ UniversitySearchOutputKey = "university_suggestions"
 def _read_university_search_instruction() -> str:
     base_dir = os.path.dirname(__file__)
     instruction_path = os.path.abspath(
-        os.path.join(base_dir,  "instructions", "university_search_agent.md")
+        os.path.join(base_dir, "instructions", "uni_search_agent.md") 
     )
     try:
         with open(instruction_path, "r", encoding="utf-8") as f:

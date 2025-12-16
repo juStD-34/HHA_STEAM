@@ -4,19 +4,24 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import os
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit  # Socket.IO disabled for now
 import json
 import sys
+import logging
+from dotenv import load_dotenv
+import hmac
+
+# Load env before importing services that rely on it
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+logging.basicConfig(level=logging.DEBUG)
 
 from career_counselor_chat.service import career_service
-import hmac
 
 # HYBRID ARCHITECTURE: HTTP (ESP32) -> Server -> SocketIO (Web)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['ACCESS_KEY'] = os.environ.get('APP_ACCESS_KEY', 'enter-demo-key')  # change in production
-# Standard threading mode for Windows compatibility
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global variables to store model and data
 model = None
@@ -31,6 +36,7 @@ current_game_state = {
 }
 data_file = 'career_data.csv'
 PROTECTED_PREFIXES = ('/api/', '/predict', '/chat')
+UNRESTRICTED_ENDPOINTS = ('static', 'access_gate', 'health_check')
 
 def has_access():
     return session.get('access_granted') is True
@@ -39,7 +45,7 @@ def has_access():
 def enforce_access():
     if not app.config.get('ACCESS_KEY'):
         return
-    if request.endpoint in ('static', 'access_gate'):
+    if request.endpoint in UNRESTRICTED_ENDPOINTS:
         return
     if has_access():
         return
@@ -150,14 +156,14 @@ def chat_with_ai():
         return jsonify({'reply': response, 'fallback': True}), 200
 
 # ===== SOCKET.IO EVENTS (Web Client) =====
-@socketio.on('connect')
-def handle_connect():
-    print('Web Client connected')
-    emit('game_update', current_game_state)
+# @socketio.on('connect')
+# def handle_connect():
+#     print('Web Client connected')
+#     emit('game_update', current_game_state)
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Web Client disconnected')
+# @socketio.on('disconnect')
+# def handle_disconnect():
+#     print('Web Client disconnected')
 
 # ===== HTTP API FOR ESP32 (Robust Bridge) =====
 @app.route('/api/game_event', methods=['POST'])
@@ -197,8 +203,7 @@ def game_event_http():
                 ingenuous={"time": time_val, "mistake": errors_val},
             )
 
-        # Broadcast to Web immediately
-        socketio.emit('game_update', current_game_state)
+        # socketio.emit('game_update', current_game_state)
         return jsonify({"status": "ok"})
         
     except Exception as e:
