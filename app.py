@@ -4,6 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import os
+import tempfile
 # from flask_socketio import SocketIO, emit  # Socket.IO disabled for now
 import json
 import sys
@@ -16,6 +17,26 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 logging.basicConfig(level=logging.DEBUG)
 
 from career_counselor_chat.service import career_service
+
+
+def _bootstrap_google_credentials() -> None:
+    """Render stores service-account JSON in an env var; materialize it if needed."""
+    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return
+    creds_blob = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if not creds_blob:
+        return
+    try:
+        fd, path = tempfile.mkstemp(prefix="gcp-key-", suffix=".json")
+        with os.fdopen(fd, "w") as handle:
+            handle.write(creds_blob)
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = path
+        logging.info("Loaded Google credentials from env blob", extra={"component": "bootstrap"})
+    except Exception:
+        logging.exception("Failed to write GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+
+_bootstrap_google_credentials()
 
 # HYBRID ARCHITECTURE: HTTP (ESP32) -> Server -> SocketIO (Web)
 app = Flask(__name__)
