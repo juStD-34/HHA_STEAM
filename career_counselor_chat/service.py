@@ -282,8 +282,18 @@ class CareerCounselorService:
         return "\n".join(filter(None, lines))
 
     def _parse_report_response(self, text: str) -> Dict[str, Any]:
+        normalized = text.strip()
+        if normalized.startswith("```"):
+            # Strip common Markdown code fences (```json ... ```)
+            normalized = normalized.lstrip("`")
+            fence_end = normalized.find("\n")
+            if fence_end != -1:
+                normalized = normalized[fence_end + 1 :]
+            closing = normalized.rfind("```")
+            if closing != -1:
+                normalized = normalized[:closing]
         try:
-            data = json.loads(text)
+            data = json.loads(normalized)
         except json.JSONDecodeError as exc:  # pragma: no cover - depends on agent output
             raise ValueError("Report agent returned invalid JSON.") from exc
 
