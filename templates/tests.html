@@ -353,25 +353,67 @@
             </div>
         </div>
 
-        <!-- Game 2: Reflex (Typing Only) -->
+        <!-- Game 2: Reflex (Playable) -->
         <div class="card p-6 rounded-2xl fade-in border-l-4 border-yellow-500 relative overflow-hidden" id="step2-card">
             <div class="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black">2</div>
             <div class="flex items-center gap-4 mb-6 relative z-10">
                 <div class="step-number bg-gradient-to-br from-yellow-500 to-orange-500 !shadow-yellow-500/50">2</div>
                 <div>
                     <h2 class="text-xl font-bold text-white">Kiểm Tra Phản Xạ (Đập Chuột)</h2>
-                    <p class="text-slate-400 text-sm">Nhập kết quả thủ công (không cần chơi game)</p>
+                    <p class="text-slate-400 text-sm">Chơi trực tiếp trên máy và hệ thống tự ghi lại điểm</p>
                 </div>
             </div>
 
             <div class="grid md:grid-cols-2 gap-6 items-start">
-                <!-- Left: Visual demo only (no scoring) -->
+                <!-- Left: Scoreboard + controls -->
+                <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <div>
+                        <p class="text-sm text-slate-200 font-semibold">Hướng dẫn</p>
+                        <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                            Nhấn “Bắt đầu” để chơi trong 10 giây. Khi biểu tượng chuột nhô lên, click để đập chúng.
+                            Điểm số sẽ gửi tự động về hệ thống sau khi hết giờ.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-center">
+                        <div class="bg-slate-900/70 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 uppercase tracking-[0.2em]">Thời gian</p>
+                            <p id="reflex-time-remaining" class="text-2xl font-bold text-white mt-1">10s</p>
+                        </div>
+                        <div class="bg-slate-900/70 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 uppercase tracking-[0.2em]">Số chuột</p>
+                            <p id="reflex-score" class="text-2xl font-bold text-amber-300 mt-1">0</p>
+                        </div>
+                        <div class="col-span-2 bg-slate-900/70 rounded-xl p-4 border border-slate-700">
+                            <p class="text-xs text-slate-400 uppercase tracking-[0.2em]">Trạng thái</p>
+                            <p id="reflex-status" class="text-lg font-semibold text-white mt-1">Chưa bắt đầu</p>
+                        </div>
+                    </div>
+
+                    <button id="reflex-start-btn" onclick="startReflexGame()"
+                        class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-semibold px-5 py-3 rounded-lg transition shadow-lg shadow-yellow-500/30 w-full text-center">
+                        🚀 Bắt đầu chơi 10 giây
+                    </button>
+
+                    <p class="text-xs text-slate-400">
+                        Lưu ý: Bạn có thể chơi lại nếu muốn cải thiện điểm số, hệ thống sẽ ghi nhận điểm của lượt mới nhất.
+                    </p>
+
+                    <p id="step2-api-message" class="hidden text-sm text-emerald-400">Đã cập nhật kết quả.</p>
+
+                    <div id="step2-status"
+                        class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
+                        <span>✅ Đã ghi nhận kết quả Bước 2!</span>
+                    </div>
+                </div>
+
+                <!-- Right: Playable board -->
                 <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700">
                     <div class="flex items-center justify-between mb-4">
                         <p class="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                            <span>🖱️</span> Mô phỏng "chuột nhô lên"
+                            <span>🖱️</span> Bảng trò chơi
                         </p>
-                        <span class="text-xs text-slate-400">Chỉ để minh hoạ</span>
+                        <span class="text-xs text-slate-400">Click vào chuột khi bật lên</span>
                     </div>
 
                     <div id="punch-board" class="punch-board select-none">
@@ -387,42 +429,9 @@
                         <button type="button" class="punch-hole" aria-label="hole 9"><span class="punch-mouse">🐭</span></button>
                     </div>
 
-                    <p class="text-xs text-slate-400 mt-4 leading-relaxed">
-                        Bạn có thể click vào các ô để xem hiệu ứng “đập”. Kết quả thật sẽ lấy ở phần nhập bên phải.
+                    <p class="text-xs text-slate-400 mt-4 leading-relaxed text-center">
+                        Chuột sẽ bật ngẫu nhiên. Đập càng nhiều trong 10 giây để tăng điểm!
                     </p>
-                </div>
-
-                <!-- Right: Typing only -->
-                <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-700 space-y-3">
-                    <p class="text-sm text-slate-200 font-semibold">Nhập kết quả thủ công:</p>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Thời gian (giây)</label>
-                            <input type="number" id="reflex-time-input"
-                                class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
-                                placeholder="10">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Số chuột đã đập</label>
-                            <input type="number" id="reflex-quantity-input"
-                                class="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-400 focus:outline-none"
-                                placeholder="0">
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <button onclick="submitReflexResult()" id="reflex-submit-btn"
-                            class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-semibold px-5 py-3 rounded-lg transition shadow-lg shadow-yellow-500/30 w-full sm:w-auto text-center">
-                            Gửi kết quả phản xạ
-                        </button>
-                        <p id="step2-api-message" class="hidden text-sm text-emerald-400">Đã cập nhật kết quả.</p>
-                    </div>
-
-                    <div id="step2-status"
-                        class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
-                        <span>✅ Đã ghi nhận kết quả Bước 2!</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -589,6 +598,13 @@
         let lastTimestamp = 0;
         let chatInitialized = false;
         let chatWaiting = false;
+        const REFLEX_DURATION_SECONDS = 10;
+        let reflexGameActive = false;
+        let reflexScore = 0;
+        let reflexTimeRemaining = REFLEX_DURATION_SECONDS;
+        let reflexSpawnInterval = null;
+        let reflexCountdownInterval = null;
+        let reflexGameTimeout = null;
 
         const chatModal = document.getElementById('chat-modal');
         const chatMessages = document.getElementById('chat-messages');
@@ -596,8 +612,6 @@
         const chatSendBtn = document.getElementById('chat-send-btn');
         const step1MessageEl = document.getElementById('step1-api-message');
         const step2MessageEl = document.getElementById('step2-api-message');
-        const reflexTimeInput = document.getElementById('reflex-time-input');
-        const reflexQuantityInput = document.getElementById('reflex-quantity-input');
         const studentModal = document.getElementById('student-info-modal');
         const studentForm = document.getElementById('student-info-form');
         const studentErrorEl = document.getElementById('student-info-error');
@@ -615,6 +629,10 @@
         const reportClassEl = document.getElementById('report-class');
         const reportFitJobEl = document.getElementById('report-fit-job');
         const reportExplanationEl = document.getElementById('report-explanation');
+        const reflexTimeRemainingEl = document.getElementById('reflex-time-remaining');
+        const reflexScoreEl = document.getElementById('reflex-score');
+        const reflexStatusEl = document.getElementById('reflex-status');
+        const reflexStartBtn = document.getElementById('reflex-start-btn');
 
         function showStudentInfoModal() {
             if (studentModal) {
@@ -644,6 +662,21 @@
                 if (homeLockMessage) {
                     homeLockMessage.classList.remove('hidden');
                 }
+            }
+        }
+
+        function updateReflexDisplays() {
+            if (reflexTimeRemainingEl) {
+                reflexTimeRemainingEl.textContent = `${Math.max(reflexTimeRemaining, 0)}s`;
+            }
+            if (reflexScoreEl) {
+                reflexScoreEl.textContent = reflexScore.toString();
+            }
+        }
+
+        function setReflexStatus(text) {
+            if (reflexStatusEl) {
+                reflexStatusEl.textContent = text;
             }
         }
 
@@ -827,7 +860,12 @@
             updateStep1Status(false);
         }
 
-        // --- Reflex Visual Demo (Step 2 left panel) ---
+        // --- Reflex Game Logic ---
+        const punchBoardController = {
+            clear() {},
+            spawn() {}
+        };
+
         function initPunchBoard() {
             const board = document.getElementById('punch-board');
             if (!board) return;
@@ -843,33 +881,101 @@
                 return i;
             }
 
-            // Random "mouse up" animation loop (visual only)
-            setInterval(() => {
-                holes.forEach(h => h.classList.remove('up'));
-                const i = randomIdx();
-                holes[i].classList.add('up');
-                // auto hide after a short time
-                setTimeout(() => holes[i].classList.remove('up'), 550);
-            }, 700);
+            function clearHoles() {
+                holes.forEach((hole) => hole.classList.remove('up'));
+            }
 
-            // Click = punch effect (visual only)
+            function spawnHole() {
+                if (!reflexGameActive) {
+                    clearHoles();
+                    return;
+                }
+                clearHoles();
+                const idx = randomIdx();
+                const hole = holes[idx];
+                hole.classList.add('up');
+                setTimeout(() => hole.classList.remove('up'), 600);
+            }
+
             holes.forEach((hole) => {
-                hole.addEventListener('mousedown', (e) => {
-                    if (!e.isTrusted) return;
+                hole.addEventListener('pointerdown', (event) => {
+                    event.preventDefault();
+                    if (!event.isTrusted) return;
+                    if (!reflexGameActive) return;
+                    if (!hole.classList.contains('up')) return;
                     hole.classList.add('hit');
                     setTimeout(() => hole.classList.remove('hit'), 220);
-                });
-                hole.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    if (!e.isTrusted) return;
-                    hole.classList.add('hit');
-                    setTimeout(() => hole.classList.remove('hit'), 220);
+                    hole.classList.remove('up');
+                    reflexScore += 1;
+                    updateReflexDisplays();
                 }, { passive: false });
             });
+
+            punchBoardController.clear = clearHoles;
+            punchBoardController.spawn = spawnHole;
         }
 
-        // kick off demo
         initPunchBoard();
+
+        function stopReflexTimers() {
+            if (reflexSpawnInterval) {
+                clearInterval(reflexSpawnInterval);
+                reflexSpawnInterval = null;
+            }
+            if (reflexCountdownInterval) {
+                clearInterval(reflexCountdownInterval);
+                reflexCountdownInterval = null;
+            }
+            if (reflexGameTimeout) {
+                clearTimeout(reflexGameTimeout);
+                reflexGameTimeout = null;
+            }
+        }
+
+        function enableReflexStartBtn(enable) {
+            if (!reflexStartBtn) return;
+            reflexStartBtn.disabled = !enable;
+            reflexStartBtn.classList.toggle('opacity-70', !enable);
+            reflexStartBtn.classList.toggle('cursor-not-allowed', !enable);
+        }
+
+        function startReflexGame() {
+            if (reflexGameActive) return;
+            reflexGameActive = true;
+            reflexScore = 0;
+            reflexTimeRemaining = REFLEX_DURATION_SECONDS;
+            setReflexStatus("Đang chơi...");
+            updateReflexDisplays();
+            clearInlineMessage(step2MessageEl);
+            enableReflexStartBtn(false);
+
+            punchBoardController.clear();
+            punchBoardController.spawn();
+            reflexSpawnInterval = setInterval(() => punchBoardController.spawn(), 650);
+
+            reflexCountdownInterval = setInterval(() => {
+                reflexTimeRemaining -= 1;
+                updateReflexDisplays();
+                if (reflexTimeRemaining <= 0) {
+                    finishReflexGame();
+                }
+            }, 1000);
+
+            reflexGameTimeout = setTimeout(() => {
+                finishReflexGame();
+            }, REFLEX_DURATION_SECONDS * 1000);
+        }
+
+        function finishReflexGame() {
+            if (!reflexGameActive) return;
+            reflexGameActive = false;
+            stopReflexTimers();
+            reflexTimeRemaining = 0;
+            updateReflexDisplays();
+            punchBoardController.clear();
+            setReflexStatus("Đang gửi kết quả...");
+            submitReflexResult();
+        }
 
         async function saveReflexResult(timeVal, quantityVal) {
             const response = await fetch('/api/reflex_result', {
@@ -884,28 +990,20 @@
         }
 
         async function submitReflexResult() {
-            const btn = document.getElementById('reflex-submit-btn');
-            const timeVal = parseFloat(reflexTimeInput.value);
-            const quantityVal = parseInt(reflexQuantityInput.value);
-            if (isNaN(timeVal) || isNaN(quantityVal)) {
-                setInlineMessage(step2MessageEl, "Vui lòng nhập đủ thời gian và số chuột.", true);
-                return;
-            }
             setInlineMessage(step2MessageEl, "⏳ Đang gửi kết quả...", false);
-            btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-not-allowed');
             try {
-                await saveReflexResult(timeVal, quantityVal);
-                whackResult.score = quantityVal;
+                await saveReflexResult(REFLEX_DURATION_SECONDS, reflexScore);
+                whackResult.score = reflexScore;
                 whackResult.done = true;
                 document.getElementById('step2-status').classList.remove('hidden');
                 checkAllDone();
                 setInlineMessage(step2MessageEl, "✅ Đã gửi kết quả phản xạ!", false);
+                setReflexStatus("Hoàn tất! Bạn đạt " + reflexScore + " chuột.");
             } catch (err) {
                 setInlineMessage(step2MessageEl, err.message || 'Có lỗi xảy ra.', true);
+                setReflexStatus("Gửi dữ liệu thất bại. Vui lòng thử lại.");
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                enableReflexStartBtn(true);
             }
         }
 
