@@ -54,10 +54,18 @@ def enforce_access():
             return jsonify({'error': 'Unauthorized'}), 401
     return redirect(url_for('access_gate', next=request.url))
 
+@app.before_request
+def block_home_during_tests():
+    if request.endpoint in UNRESTRICTED_ENDPOINTS or request.endpoint is None:
+        return
+    if session.get('tests_in_progress') and not session.get('tests_completed'):
+        if request.endpoint == 'home':
+            return redirect(url_for('test_page'))
+
 @app.route('/access', methods=['GET', 'POST'])
 def access_gate():
     error = None
-    next_url = request.args.get('next') or request.form.get('next') or url_for('index')
+    next_url = request.args.get('next') or request.form.get('next') or url_for('home')
     if request.method == 'POST':
         provided = (request.form.get('access_key') or '').strip()
         if provided and hmac.compare_digest(provided, app.config['ACCESS_KEY']):
@@ -87,12 +95,32 @@ def train_model():
     return "Model trained successfully."
 
 @app.route('/')
-def index():
+@app.route('/home')
+def home():
     global model_accuracy
+    session.pop('student_info', None)
+    session.pop('tests_in_progress', None)
+    session.pop('tests_completed', None)
     if model is None:
         train_model()
     acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
     return render_template('index.html', accuracy=acc_val)
+
+@app.route('/test')
+def test_page():
+    global model_accuracy
+    if model is None:
+        train_model()
+    acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
+    session['tests_in_progress'] = True
+    session['tests_completed'] = False
+    student_info = session.get('student_info')
+    return render_template(
+        'tests.html',
+        accuracy=acc_val,
+        student_info=student_info,
+        tests_completed=session.get('tests_completed', False)
+    )
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -116,7 +144,6 @@ def predict():
         }
         
         suggested_careers = careers_map.get(group, [])
-        
         return jsonify({
             'group': group,
             'careers': suggested_careers
@@ -124,18 +151,59 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/final_report', methods=['POST'])
+def generate_final_report():
+    student_profile = session.get('student_info')
+    if not student_profile:
+        return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
+
+    payload = request.json or {}
+    prediction = {
+        'group': payload.get('group'),
+        'careers': payload.get('careers') or [],
+        'summary': payload.get('summary') or ''
+    }
+    if not prediction['group']:
+        return jsonify({'error': 'Thiếu dữ liệu dự đoán.'}), 400
+
+    try:
+        report = career_service.generate_final_report(
+            student_profile=student_profile,
+            prediction=prediction,
+            user_id="web_chat_user",
+        )
+        session['tests_in_progress'] = False
+        session['tests_completed'] = True
+        return jsonify(report)
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except Exception as exc:
+        app.logger.exception("Failed to generate final report")
+        return jsonify({'error': 'Không thể tạo báo cáo cuối.'}), 500
+
 @app.route('/chat', methods=['POST'])
 def chat_with_ai():
     """Simple chatbot endpoint used by the UI modal."""
     global model_accuracy
     payload = request.json or {}
     message = (payload.get('message') or '').strip()
+    student_profile = session.get('student_info')
 
     if not message:
         return jsonify({'error': 'Missing message'}), 400
 
     try:
-        agent_reply = career_service.ask(message, user_id="web_chat_user").text
+        enriched_message = message
+        if student_profile:
+            info_str = (
+                f"Học sinh: {student_profile.get('full_name')} | "
+                f"Giới tính: {student_profile.get('gender')} | "
+                f"Khối: {student_profile.get('grade')} | "
+                f"Lớp: {student_profile.get('class_name')}\n"
+                f"Nội dung: {message}"
+            )
+            enriched_message = info_str
+        agent_reply = career_service.ask(enriched_message, user_id="web_chat_user").text
         return jsonify({'reply': agent_reply})
     except Exception as exc:
         # Fallback to deterministic responses so the UI isn't blocked
@@ -154,6 +222,28 @@ def chat_with_ai():
                 "bạn có thể hỏi về quy trình kiểm tra, kết quả hoặc cách hệ thống tư vấn nghề."
             )
         return jsonify({'reply': response, 'fallback': True}), 200
+
+@app.route('/api/student_info', methods=['POST'])
+def save_student_info():
+    data = request.json or {}
+    full_name = (data.get('full_name') or '').strip()
+    gender = (data.get('gender') or '').strip()
+    grade = (data.get('grade') or '').strip()
+    class_name = (data.get('class_name') or '').strip()
+    age = (data.get('age') or '').strip()
+
+    if not all([full_name, gender, grade, class_name, age]):
+        return jsonify({'error': 'Thiếu thông tin học sinh.'}), 400
+
+    session['student_info'] = {
+        'full_name': full_name,
+        'gender': gender,
+        'grade': grade,
+        'class_name': class_name,
+        'age': age
+    }
+
+    return jsonify({'message': 'Đã lưu thông tin học sinh.', 'student_info': session['student_info']}), 200
 
 # ===== SOCKET.IO EVENTS (Web Client) =====
 # @socketio.on('connect')

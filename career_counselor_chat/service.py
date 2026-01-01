@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+import json
 import os
 from logging import getLogger
 from typing import Optional, Dict, Any
@@ -13,7 +14,8 @@ from google.adk.runners import (
     types,
 )
 
-from .root_agent import build_agent
+from .root_agent import build_agent, DEFAULT_MODEL
+from .report_agent import build_report_agent
 from vertexai import init as vertexai_init
 
 logger = getLogger(__name__)
@@ -36,11 +38,13 @@ class CareerCounselorService:
         self,
         *,
         agent=None,
+        report_agent=None,
         app_name: str = DEFAULT_APP_NAME,
         session_service: Optional[InMemorySessionService] = None,
     ) -> None:
         self._app_name = app_name
         self._agent = agent or build_agent()
+        self._report_agent = report_agent or build_report_agent(model=DEFAULT_MODEL)
         self._session_service = session_service or InMemorySessionService()
         self._test_metrics: Dict[str, Dict[str, Optional[Dict[str, Any]]]] = {}
         self._ensure_vertex_ai()
@@ -139,6 +143,73 @@ class CareerCounselorService:
                 "use await ask_async(...) instead."
             )
 
+    def generate_final_report(
+        self,
+        *,
+        student_profile: Dict[str, Any],
+        prediction: Dict[str, Any],
+        user_id: str = "user123",
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Sync wrapper to create the JSON final report via ReportAgent."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(
+                self.generate_final_report_async(
+                    student_profile=student_profile,
+                    prediction=prediction,
+                    user_id=user_id,
+                    session_id=session_id,
+                )
+            )
+        else:
+            raise RuntimeError(
+                "generate_final_report() cannot run inside an active loop; "
+                "call generate_final_report_async instead."
+            )
+
+    async def generate_final_report_async(
+        self,
+        *,
+        student_profile: Dict[str, Any],
+        prediction: Dict[str, Any],
+        user_id: str = "user123",
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        if not student_profile:
+            raise ValueError("Missing student profile for final report.")
+        prompt = self._build_report_prompt(
+            student_profile=student_profile,
+            prediction=prediction,
+            user_id=user_id,
+        )
+        report_session_id = session_id or f"{self._app_name}_{user_id}_report"
+        session = await self._ensure_session(
+            user_id=user_id,
+            session_id=report_session_id,
+        )
+        runner = Runner(
+            agent=self._report_agent,
+            app_name=self._app_name,
+            session_service=self._session_service,
+        )
+        user_content = types.Content(role="user", parts=[types.Part(text=prompt)])
+        final_text: Optional[str] = None
+        async for event in runner.run_async(
+            user_id=session.user_id,
+            session_id=session.id,
+            new_message=user_content,
+            run_config=RunConfig(streaming_mode=None),
+        ):
+            if event.is_final_response():
+                final_text = _extract_text_from_event(event)
+                break
+
+        if not final_text:
+            raise RuntimeError("Report agent returned no output.")
+        return self._parse_report_response(final_text)
+
     async def _ensure_session(
         self,
         *,
@@ -180,6 +251,45 @@ class CareerCounselorService:
                 "time": float(reflex.get("time", 0.0) or 0.0),
                 "quantity": int(reflex.get("quantity", 0) or 0),
             }
+
+    def _build_report_prompt(
+        self,
+        *,
+        student_profile: Dict[str, Any],
+        prediction: Dict[str, Any],
+        user_id: str,
+    ) -> str:
+        profile_line = (
+            f"Học sinh: name={student_profile.get('full_name', '')}, "
+            f"age={student_profile.get('age', '')}, "
+            f"class={student_profile.get('class_name', '')}, "
+            f"grade={student_profile.get('grade', '')}, "
+            f"gender={student_profile.get('gender', '')}"
+        )
+        careers = prediction.get("careers") or []
+        jobs_text = ", ".join(careers) if careers else "chưa xác định"
+        prediction_line = (
+            f"CareerPrediction: group={prediction.get('group')}, "
+            f"fit_job={jobs_text}, summary={prediction.get('summary', '')}"
+        )
+        lines = [profile_line, prediction_line]
+        test_context = self._build_test_context(user_id)
+        if test_context:
+            lines.append(test_context)
+        lines.append(
+            "Yêu cầu: Xuất JSON với keys name, age, class, fit_job, explanation bằng tiếng Việt."
+        )
+        return "\n".join(filter(None, lines))
+
+    def _parse_report_response(self, text: str) -> Dict[str, Any]:
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:  # pragma: no cover - depends on agent output
+            raise ValueError("Report agent returned invalid JSON.") from exc
+
+        for key in ("name", "age", "class", "fit_job", "explanation"):
+            data.setdefault(key, "")
+        return data
 
     def _build_test_context(self, user_id: str) -> Optional[str]:
         metrics = self._test_metrics.get(user_id)

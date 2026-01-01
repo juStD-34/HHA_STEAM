@@ -28,9 +28,11 @@ def _read_report_agent_instruction() -> str:
             extra={"component": "career_counseling", "path": instruction_path},
         )
         return (
-            "You generate the final Vietnamese report that combines CareerAgent recommendations "
-            "with IngeousTest and ReflexTest metrics (time + mistake/quantity). "
-            "Explain what each test result implies and connect them to the recommended careers."
+            "You generate the final Vietnamese report that combines CareerAgent recommendations, "
+            "the student's profile (name, age, class), and IngeousTest/ReflexTest metrics "
+            "(time + mistake/quantity). Output must be valid JSON with keys name, age, class, "
+            "fit_job, explanation. Explain what each test result implies and connect them "
+            "to the recommended careers while referencing the student's information."
         )
     except Exception as exc:
         logger.error(
@@ -38,9 +40,11 @@ def _read_report_agent_instruction() -> str:
             extra={"component": "career_counseling", "error": str(exc)},
         )
         return (
-            "You generate the final Vietnamese report that combines CareerAgent recommendations "
-            "with IngeousTest and ReflexTest metrics (time + mistake/quantity). "
-            "Explain what each test result implies and connect them to the recommended careers."
+            "You generate the final Vietnamese report that combines CareerAgent recommendations, "
+            "the student's profile (name, age, class), and IngeousTest/ReflexTest metrics "
+            "(time + mistake/quantity). Output must be valid JSON with keys name, age, class, "
+            "fit_job, explanation. Explain what each test result implies and connect them "
+            "to the recommended careers while referencing the student's information."
         )
 
 
@@ -58,8 +62,9 @@ def build_report_agent(*, model: str) -> LlmAgent:
         name=ReportAgentName,
         model=model,
         description=(
-            "ReportAgent: combines CareerAgent output with IngeousTest/ReflexTest metrics "
-            "and delivers the final Vietnamese counseling report."
+            "ReportAgent: combines CareerAgent output, the student's name/age/class profile, "
+            "and IngeousTest/ReflexTest metrics to deliver a JSON Vietnamese counseling report "
+            "with keys name, age, class, fit_job, explanation."
         ),
         instruction=_read_report_agent_instruction(),
         tools=[],

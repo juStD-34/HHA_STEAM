@@ -189,16 +189,24 @@
                     tích chính xác nhất cho kế hoạch nghề nghiệp của bạn.
                 </p>
             </div>
-            <a href="{{ url_for('home') }}"
-                class="self-center inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 hover:text-emerald-200 transition">
-                <span aria-hidden="true">←</span> Về trang chủ
-            </a>
+            <div class="flex flex-col items-center md:items-end gap-1 text-center md:text-right">
+                {% set locked = not tests_completed %}
+                <a id="home-link" href="{{ url_for('home') }}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition {{ 'opacity-60 cursor-not-allowed pointer-events-none' if locked else 'hover:text-emerald-200' }}"
+                    aria-disabled="{{ 'true' if locked else 'false' }}">
+                    <span aria-hidden="true">←</span> Về trang chủ
+                </a>
+                <p id="home-lock-message"
+                    class="text-xs text-rose-300 {{ 'hidden' if not locked else '' }}">
+                    Hoàn thành báo cáo để quay lại trang chủ.
+                </p>
+            </div>
         </div>
     </header>
 
     <!-- Student Info Modal -->
     <div id="student-info-modal"
-        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8">
+        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8 {{ 'hidden' if student_info and student_info.get('age') else '' }}">
         <form id="student-info-form"
             class="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl">
             <div>
@@ -213,6 +221,12 @@
                     <input id="student-fullname" type="text" required
                         class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-emerald-400 focus:outline-none"
                         placeholder="Ví dụ: Nguyễn Văn A">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Tuổi</label>
+                    <input id="student-age" type="number" min="10" max="25" required
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-emerald-400 focus:outline-none"
+                        placeholder="17">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-1">Giới tính</label>
@@ -490,6 +504,38 @@
             </div>
         </div>
 
+        <div id="final-report-card"
+            class="hidden bg-slate-900/70 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between gap-3">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    📄 Báo cáo cá nhân hoá
+                </h3>
+                <span id="report-status" class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                    <p class="text-slate-400 text-xs uppercase tracking-wide">Họ và tên</p>
+                    <p id="report-name" class="text-white font-semibold mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                    <p class="text-slate-400 text-xs uppercase tracking-wide">Tuổi</p>
+                    <p id="report-age" class="text-white font-semibold mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                    <p class="text-slate-400 text-xs uppercase tracking-wide">Lớp</p>
+                    <p id="report-class" class="text-white font-semibold mt-1">--</p>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                    <p class="text-slate-400 text-xs uppercase tracking-wide">Ngành nghề phù hợp</p>
+                    <p id="report-fit-job" class="text-emerald-300 font-semibold mt-1">--</p>
+                </div>
+            </div>
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Giải thích</p>
+                <p id="report-explanation" class="text-slate-100 text-sm leading-relaxed">--</p>
+            </div>
+        </div>
+
     </div>
 
     <!-- Floating Chat Button -->
@@ -538,7 +584,8 @@
         // State
         let wireLoopResult = { time: 0, errors: 0, done: false };
         let whackResult = { score: 0, done: false };
-        let studentInfo = null;
+        let studentInfo = {{ student_info | tojson | default('null', true) }} || null;
+        let testsCompleted = {{ tests_completed | tojson | default('false') }} || false;
         let lastTimestamp = 0;
         let chatInitialized = false;
         let chatWaiting = false;
@@ -555,9 +602,19 @@
         const studentForm = document.getElementById('student-info-form');
         const studentErrorEl = document.getElementById('student-info-error');
         const studentFullNameInput = document.getElementById('student-fullname');
+        const studentAgeInput = document.getElementById('student-age');
         const studentGenderSelect = document.getElementById('student-gender');
         const studentGradeSelect = document.getElementById('student-grade');
         const studentClassInput = document.getElementById('student-class');
+        const homeLink = document.getElementById('home-link');
+        const homeLockMessage = document.getElementById('home-lock-message');
+        const reportCard = document.getElementById('final-report-card');
+        const reportStatus = document.getElementById('report-status');
+        const reportNameEl = document.getElementById('report-name');
+        const reportAgeEl = document.getElementById('report-age');
+        const reportClassEl = document.getElementById('report-class');
+        const reportFitJobEl = document.getElementById('report-fit-job');
+        const reportExplanationEl = document.getElementById('report-explanation');
 
         function showStudentInfoModal() {
             if (studentModal) {
@@ -571,14 +628,34 @@
             }
         }
 
-        function handleStudentInfoSubmit(event) {
+        function updateHomeLinkState() {
+            if (!homeLink) return;
+            if (testsCompleted) {
+                homeLink.classList.remove('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
+                homeLink.classList.add('hover:text-emerald-200');
+                homeLink.setAttribute('aria-disabled', 'false');
+                if (homeLockMessage) {
+                    homeLockMessage.classList.add('hidden');
+                }
+            } else {
+                homeLink.classList.add('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
+                homeLink.classList.remove('hover:text-emerald-200');
+                homeLink.setAttribute('aria-disabled', 'true');
+                if (homeLockMessage) {
+                    homeLockMessage.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function handleStudentInfoSubmit(event) {
             event.preventDefault();
             const fullName = (studentFullNameInput?.value || '').trim();
+            const age = (studentAgeInput?.value || '').trim();
             const gender = studentGenderSelect?.value || '';
             const grade = studentGradeSelect?.value || '';
             const className = (studentClassInput?.value || '').trim();
 
-            if (!fullName || !gender || !grade || !className) {
+            if (!fullName || !age || !gender || !grade || !className) {
                 if (studentErrorEl) {
                     studentErrorEl.textContent = "Vui lòng điền đầy đủ thông tin.";
                     studentErrorEl.classList.remove('hidden');
@@ -586,15 +663,52 @@
                 return;
             }
 
-            studentInfo = { fullName, gender, grade, className };
-            if (studentErrorEl) {
-                studentErrorEl.classList.add('hidden');
+            try {
+                const response = await fetch('/api/student_info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        age,
+                        gender,
+                        grade,
+                        class_name: className
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || 'Không thể lưu thông tin.');
+                }
+                studentInfo = data.student_info || {
+                    full_name: fullName,
+                    age,
+                    gender,
+                    grade,
+                    class_name: className
+                };
+                if (studentErrorEl) {
+                    studentErrorEl.classList.add('hidden');
+                }
+                hideStudentInfoModal();
+            } catch (err) {
+                if (studentErrorEl) {
+                    studentErrorEl.textContent = err.message || 'Không thể lưu thông tin.';
+                    studentErrorEl.classList.remove('hidden');
+                }
             }
-            hideStudentInfoModal();
         }
 
         if (studentForm) {
             studentForm.addEventListener('submit', handleStudentInfoSubmit);
+        }
+
+        if (homeLink) {
+            homeLink.addEventListener('click', (event) => {
+                if (!testsCompleted) {
+                    event.preventDefault();
+                    alert('Hoàn thành báo cáo để quay lại trang chủ.');
+                }
+            });
         }
 
         // --- Socket.IO Connection (Step 1) ---
@@ -827,8 +941,12 @@
                 return;
             }
 
+            const reportBtn = document.getElementById('get-result-btn');
+
             try {
-                document.getElementById('get-result-btn').innerText = "⏳ Đang phân tích...";
+                if (reportBtn) {
+                    reportBtn.innerText = "⏳ Đang phân tích...";
+                }
 
                 const response = await fetch('/predict', {
                     method: 'POST',
@@ -839,7 +957,7 @@
 
                 if (data.error) { alert('Lỗi: ' + data.error); return; }
 
-                // Display
+                // Display prediction summary
                 const groupEl = document.getElementById('group-result');
                 groupEl.innerText = data.group;
                 groupEl.className = "text-5xl font-black mb-2 " + (data.group === 'A' ? "text-blue-500" : data.group === 'B' ? "text-emerald-500" : "text-purple-500");
@@ -865,12 +983,63 @@
                 document.getElementById('result-card').classList.remove('hidden');
                 document.getElementById('result-card').scrollIntoView({ behavior: "smooth" });
 
-                document.getElementById('get-result-btn').innerText = "📘 Get Final Report";
+                if (reportBtn) {
+                    reportBtn.innerText = "⏳ Đang tạo báo cáo...";
+                }
+                await generateFinalReport(
+                    { group: data.group, careers: data.careers },
+                    desc
+                );
+                if (reportBtn) {
+                    reportBtn.innerText = "📘 Get Final Report";
+                }
 
             } catch (err) {
                 console.error(err);
-                alert('Lỗi kết nối server!');
-                document.getElementById('get-result-btn').innerText = "📘 Get Final Report";
+                alert(err.message || 'Lỗi kết nối server!');
+                if (reportBtn) {
+                    reportBtn.innerText = "📘 Get Final Report";
+                }
+            }
+        }
+
+        async function generateFinalReport(predictionData, summaryText) {
+            if (reportCard) {
+                reportCard.classList.remove('hidden');
+            }
+            if (reportStatus) {
+                reportStatus.textContent = "Đang xử lý";
+            }
+            try {
+                const response = await fetch('/api/final_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        group: predictionData.group,
+                        careers: predictionData.careers,
+                        summary: summaryText
+                    })
+                });
+                const payload = await response.json();
+                if (!response.ok || payload.error) {
+                    throw new Error(payload.error || 'Không thể tạo báo cáo.');
+                }
+
+                if (reportNameEl) reportNameEl.textContent = payload.name || studentInfo?.full_name || '--';
+                if (reportAgeEl) reportAgeEl.textContent = payload.age || studentInfo?.age || '--';
+                if (reportClassEl) reportClassEl.textContent = payload.class || studentInfo?.class_name || '--';
+                if (reportFitJobEl) reportFitJobEl.textContent = payload.fit_job || '--';
+                if (reportExplanationEl) reportExplanationEl.textContent = payload.explanation || '--';
+                if (reportStatus) {
+                    reportStatus.textContent = "Hoàn tất";
+                }
+                testsCompleted = true;
+                updateHomeLinkState();
+            } catch (err) {
+                if (reportStatus) {
+                    reportStatus.textContent = "Lỗi";
+                }
+                throw err;
             }
         }
 
@@ -959,6 +1128,12 @@
         });
 
         checkAllDone();
+        updateHomeLinkState();
+        if (studentInfo && studentInfo.age) {
+            hideStudentInfoModal();
+        } else {
+            showStudentInfoModal();
+        }
 
     </script>
 </body>
