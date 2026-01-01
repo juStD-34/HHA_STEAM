@@ -252,6 +252,10 @@ class CareerCounselorService:
                 "quantity": int(reflex.get("quantity", 0) or 0),
             }
 
+    def reset_test_metrics(self, *, user_id: str) -> None:
+        """Clear cached test metrics for a user after a session finishes."""
+        self._test_metrics.pop(user_id, None)
+
     def _build_report_prompt(
         self,
         *,

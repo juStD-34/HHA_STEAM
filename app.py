@@ -58,6 +58,9 @@ current_game_state = {
 data_file = 'career_data.csv'
 PROTECTED_PREFIXES = ('/api/', '/predict', '/chat')
 UNRESTRICTED_ENDPOINTS = ('static', 'access_gate', 'health_check')
+TEST_USER_ID = "web_chat_user"
+BEST_STEP1_SESSION_KEY = "best_step1"
+BEST_REFLEX_SESSION_KEY = "best_reflex"
 
 def has_access():
     return session.get('access_granted') is True
@@ -119,9 +122,7 @@ def train_model():
 @app.route('/home')
 def home():
     global model_accuracy
-    session.pop('student_info', None)
-    session.pop('tests_in_progress', None)
-    session.pop('tests_completed', None)
+    _reset_session_state()
     if model is None:
         train_model()
     acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
@@ -140,7 +141,9 @@ def test_page():
         'tests.html',
         accuracy=acc_val,
         student_info=student_info,
-        tests_completed=session.get('tests_completed', False)
+        tests_completed=session.get('tests_completed', False),
+        best_step1=session.get(BEST_STEP1_SESSION_KEY),
+        best_reflex=session.get(BEST_REFLEX_SESSION_KEY),
     )
 
 @app.route('/predict', methods=['POST'])
@@ -191,7 +194,7 @@ def generate_final_report():
         report = career_service.generate_final_report(
             student_profile=student_profile,
             prediction=prediction,
-            user_id="web_chat_user",
+            user_id=TEST_USER_ID,
         )
         session['tests_in_progress'] = False
         session['tests_completed'] = True
@@ -224,7 +227,7 @@ def chat_with_ai():
                 f"Nội dung: {message}"
             )
             enriched_message = info_str
-        agent_reply = career_service.ask(enriched_message, user_id="web_chat_user").text
+        agent_reply = career_service.ask(enriched_message, user_id=TEST_USER_ID).text
         return jsonify({'reply': agent_reply})
     except Exception as exc:
         # Fallback to deterministic responses so the UI isn't blocked
@@ -287,6 +290,7 @@ def game_event_http():
         event = data.get('event')
         import time as t
         current_time = t.time()
+        response_payload = {"status": "ok"}
         
         if event == 'start':
             current_game_state['status'] = 'playing'
@@ -309,13 +313,14 @@ def game_event_http():
             current_game_state['errors'] = errors_val
             current_game_state['timestamp'] = current_time
             print(f">>> GAME FINISHED: T={time_val}, E={errors_val}")
-            career_service.update_test_metrics(
-                user_id="web_chat_user",
-                ingenuous={"time": time_val, "mistake": errors_val},
-            )
+            best_value, improved = _record_step1_result(time_val, errors_val)
+            response_payload.update({
+                "best": best_value,
+                "improved": improved,
+            })
 
         # socketio.emit('game_update', current_game_state)
-        return jsonify({"status": "ok"})
+        return jsonify(response_payload)
         
     except Exception as e:
         print(f"Error processing ESP32 data: {e}")
@@ -330,11 +335,12 @@ def reflex_result():
         app.logger.info("Reflex result payload: %s", data)
         reflex_time = float(data.get('time') or 0.0)
         quantity = int(data.get('quantity') or 0)
-        career_service.update_test_metrics(
-            user_id="web_chat_user",
-            reflex={"time": reflex_time, "quantity": quantity},
-        )
-        return jsonify({"status": "ok"})
+        best_value, improved = _record_reflex_result(quantity, reflex_time)
+        return jsonify({
+            "status": "ok",
+            "best": best_value,
+            "improved": improved,
+        })
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
@@ -353,3 +359,54 @@ if __name__ == '__main__':
     # Use standard app.run() which works perfectly with threading mode
     app.run(host='0.0.0.0', port=5000, debug=True)
 
+def _reset_session_state():
+    """Clear session flags and cached test metrics for a fresh attempt."""
+    session.pop('student_info', None)
+    session.pop('tests_in_progress', None)
+    session.pop('tests_completed', None)
+    session.pop(BEST_STEP1_SESSION_KEY, None)
+    session.pop(BEST_REFLEX_SESSION_KEY, None)
+    career_service.reset_test_metrics(user_id=TEST_USER_ID)
+
+
+def _record_step1_result(time_val: float, errors_val: int):
+    """Persist the best Wire Loop result in session + agent state."""
+    best = session.get(BEST_STEP1_SESSION_KEY)
+    improved = False
+    candidate = {'time': float(time_val), 'errors': int(errors_val)}
+    if (
+        not best
+        or candidate['errors'] < best.get('errors', 0)
+        or (
+            candidate['errors'] == best.get('errors', 0)
+            and candidate['time'] < best.get('time', float('inf'))
+        )
+    ):
+        session[BEST_STEP1_SESSION_KEY] = candidate
+        career_service.update_test_metrics(
+            user_id=TEST_USER_ID,
+            ingenuous={'time': candidate['time'], 'mistake': candidate['errors']},
+        )
+        best = candidate
+        improved = True
+    elif not best:
+        best = candidate
+    return best, improved
+
+
+def _record_reflex_result(quantity: int, time_val: float):
+    """Persist the best Reflex game score in session + agent state."""
+    best = session.get(BEST_REFLEX_SESSION_KEY)
+    improved = False
+    candidate = {'quantity': int(quantity), 'time': float(time_val)}
+    if not best or candidate['quantity'] > best.get('quantity', 0):
+        session[BEST_REFLEX_SESSION_KEY] = candidate
+        career_service.update_test_metrics(
+            user_id=TEST_USER_ID,
+            reflex={'time': candidate['time'], 'quantity': candidate['quantity']},
+        )
+        best = candidate
+        improved = True
+    elif not best:
+        best = candidate
+    return best, improved

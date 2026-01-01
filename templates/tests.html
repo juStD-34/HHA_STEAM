@@ -351,6 +351,10 @@
                 class="mt-4 hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
                 <span>✅ Đã ghi nhận kết quả Bước 1!</span>
             </div>
+            <div id="step1-best-summary"
+                class="mt-2 hidden text-sm text-slate-300">
+                🎯 Kỷ lục hiện tại: <span id="best-step1-time">--</span>s | <span id="best-step1-errors">--</span> lỗi
+            </div>
         </div>
 
         <!-- Game 2: Reflex (Playable) -->
@@ -405,6 +409,10 @@
                         class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
                         <span>✅ Đã ghi nhận kết quả Bước 2!</span>
                     </div>
+                    <p id="reflex-best-display"
+                        class="hidden text-xs text-amber-200 font-semibold text-center">
+                        🏅 Điểm cao nhất: <span id="reflex-best-score">0</span>
+                    </p>
                 </div>
 
                 <!-- Right: Playable board -->
@@ -591,10 +599,20 @@
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script> -->
     <script>
         // State
-        let wireLoopResult = { time: 0, errors: 0, done: false };
-        let whackResult = { score: 0, done: false };
+        let bestStep1 = {{ best_step1 | tojson | default('null', true) }} || null;
+        let bestReflex = {{ best_reflex | tojson | default('null', true) }} || null;
+        let wireLoopResult = {
+            time: bestStep1?.time || 0,
+            errors: bestStep1?.errors || 0,
+            done: Boolean(bestStep1)
+        };
+        let whackResult = {
+            score: bestReflex?.quantity || 0,
+            done: Boolean(bestReflex)
+        };
         let studentInfo = {{ student_info | tojson | default('null', true) }} || null;
         let testsCompleted = {{ tests_completed | tojson | default('false') }} || false;
+        let reflexBestScore = bestReflex?.quantity || 0;
         let lastTimestamp = 0;
         let chatInitialized = false;
         let chatWaiting = false;
@@ -633,6 +651,11 @@
         const reflexScoreEl = document.getElementById('reflex-score');
         const reflexStatusEl = document.getElementById('reflex-status');
         const reflexStartBtn = document.getElementById('reflex-start-btn');
+        const step1BestSummary = document.getElementById('step1-best-summary');
+        const step1BestTimeEl = document.getElementById('best-step1-time');
+        const step1BestErrorsEl = document.getElementById('best-step1-errors');
+        const reflexBestDisplay = document.getElementById('reflex-best-display');
+        const reflexBestScoreEl = document.getElementById('reflex-best-score');
 
         function showStudentInfoModal() {
             if (studentModal) {
@@ -678,6 +701,29 @@
             if (reflexStatusEl) {
                 reflexStatusEl.textContent = text;
             }
+        }
+
+        function setStep1Best(best) {
+            if (!step1BestSummary || !step1BestTimeEl || !step1BestErrorsEl) return;
+            if (!best) {
+                step1BestSummary.classList.add('hidden');
+                return;
+            }
+            const bestTime = typeof best.time === 'number' ? best.time : parseFloat(best.time || 0);
+            const bestErrors = typeof best.errors === 'number' ? best.errors : parseInt(best.errors || 0);
+            step1BestTimeEl.textContent = bestTime.toFixed(2);
+            step1BestErrorsEl.textContent = bestErrors.toString();
+            step1BestSummary.classList.remove('hidden');
+        }
+
+        function setReflexBest(score) {
+            if (!reflexBestDisplay || !reflexBestScoreEl) return;
+            if (!score || score <= 0) {
+                reflexBestDisplay.classList.add('hidden');
+                return;
+            }
+            reflexBestScoreEl.textContent = score.toString();
+            reflexBestDisplay.classList.remove('hidden');
         }
 
         async function handleStudentInfoSubmit(event) {
@@ -833,10 +879,19 @@
                 if (!response.ok || data.error) {
                     throw new Error(data.error || 'Không thể lưu kết quả.');
                 }
-                wireLoopResult.time = timeVal;
-                wireLoopResult.errors = errorVal;
+                const bestData = data.best || { time: timeVal, errors: errorVal };
+                bestStep1 = bestData;
+                wireLoopResult.time = bestData.time;
+                wireLoopResult.errors = bestData.errors;
+                wireLoopResult.done = true;
+                inputTime.value = bestData.time;
+                inputErrors.value = bestData.errors;
                 updateStep1Status(true);
-                setInlineMessage(step1MessageEl, "✅ Đã gửi kết quả Wire Loop!", false);
+                setStep1Best(bestData);
+                const successMsg = data.improved
+                    ? "🎉 Kỷ lục mới cho Wire Loop!"
+                    : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
+                setInlineMessage(step1MessageEl, successMsg, false);
             } catch (err) {
                 setInlineMessage(step1MessageEl, err.message || 'Có lỗi xảy ra.', true);
             } finally {
@@ -987,18 +1042,30 @@
             if (!response.ok || data.error) {
                 throw new Error(data.error || 'Không thể lưu kết quả phản xạ.');
             }
+            return data;
         }
 
         async function submitReflexResult() {
             setInlineMessage(step2MessageEl, "⏳ Đang gửi kết quả...", false);
             try {
-                await saveReflexResult(REFLEX_DURATION_SECONDS, reflexScore);
-                whackResult.score = reflexScore;
+                const payload = await saveReflexResult(REFLEX_DURATION_SECONDS, reflexScore);
+                const bestData = payload.best || { quantity: reflexScore };
+                bestReflex = bestData;
+                reflexBestScore = bestData.quantity || reflexScore;
+                whackResult.score = reflexBestScore;
                 whackResult.done = true;
                 document.getElementById('step2-status').classList.remove('hidden');
                 checkAllDone();
-                setInlineMessage(step2MessageEl, "✅ Đã gửi kết quả phản xạ!", false);
-                setReflexStatus("Hoàn tất! Bạn đạt " + reflexScore + " chuột.");
+                setReflexBest(reflexBestScore);
+                const successMsg = payload.improved
+                    ? `🎉 Kỷ lục mới: ${reflexBestScore} chuột!`
+                    : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
+                setInlineMessage(step2MessageEl, successMsg, false);
+                setReflexStatus(
+                    payload.improved
+                        ? `Hoàn tất! Điểm mới: ${reflexBestScore}`
+                        : `Hoàn tất! Kỷ lục hiện tại: ${reflexBestScore}`
+                );
             } catch (err) {
                 setInlineMessage(step2MessageEl, err.message || 'Có lỗi xảy ra.', true);
                 setReflexStatus("Gửi dữ liệu thất bại. Vui lòng thử lại.");
@@ -1225,6 +1292,8 @@
             }
         });
 
+        setStep1Best(bestStep1);
+        setReflexBest(reflexBestScore);
         checkAllDone();
         updateHomeLinkState();
         if (studentInfo && studentInfo.age) {
