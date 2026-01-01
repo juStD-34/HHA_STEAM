@@ -1,4 +1,4 @@
-Flask
+Flask[async]
 pandas
 scikit-learn
 flask-socketio
