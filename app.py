@@ -176,7 +176,7 @@ def predict():
         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/final_report', methods=['POST'])
-def generate_final_report():
+async def generate_final_report():
     student_profile = session.get('student_info')
     if not student_profile:
         return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
@@ -191,7 +191,7 @@ def generate_final_report():
         return jsonify({'error': 'Thiếu dữ liệu dự đoán.'}), 400
 
     try:
-        report = career_service.generate_final_report(
+        report = await career_service.generate_final_report_async(
             student_profile=student_profile,
             prediction=prediction,
             user_id=TEST_USER_ID,
@@ -206,7 +206,7 @@ def generate_final_report():
         return jsonify({'error': 'Không thể tạo báo cáo cuối.'}), 500
 
 @app.route('/chat', methods=['POST'])
-def chat_with_ai():
+async def chat_with_ai():
     """Simple chatbot endpoint used by the UI modal."""
     global model_accuracy
     payload = request.json or {}
@@ -227,7 +227,9 @@ def chat_with_ai():
                 f"Nội dung: {message}"
             )
             enriched_message = info_str
-        agent_reply = career_service.ask(enriched_message, user_id=TEST_USER_ID).text
+        agent_reply = (
+            await career_service.ask_async(enriched_message, user_id=TEST_USER_ID)
+        ).text
         return jsonify({'reply': agent_reply})
     except Exception as exc:
         # Fallback to deterministic responses so the UI isn't blocked
