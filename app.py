@@ -158,6 +158,19 @@ def test_page():
         chat_done=session.get(CHAT_DONE_SESSION_KEY, False),
     )
 
+@app.route('/result')
+def result_page():
+    global model_accuracy
+    if model is None:
+        train_model()
+    acc_val = round(model_accuracy * 100, 2) if model_accuracy else 0
+    student_info = session.get('student_info')
+    return render_template(
+        'result.html',
+        accuracy=acc_val,
+        student_info=student_info,
+    )
+
 @app.route('/predict', methods=['POST'])
 def predict():
     global model
@@ -189,7 +202,9 @@ def predict():
 
 @app.route('/api/final_report', methods=['POST'])
 def generate_final_report():
-    student_profile = session.get('student_info')
+    payload = request.json or {}
+    app.logger.info("Final report payload: %s", payload)
+    student_profile = payload.get('student_info') or session.get('student_info')
     if not student_profile:
         return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
 
@@ -198,7 +213,9 @@ def generate_final_report():
         return jsonify({
             'error': 'Chưa có lịch sử trò chuyện. Hãy trò chuyện với AI trước khi tạo báo cáo.'
         }), 400
-    if not session.get(BEST_STEP1_SESSION_KEY) or not session.get(BEST_REFLEX_SESSION_KEY):
+    best_step1 = payload.get('best_step1') or session.get(BEST_STEP1_SESSION_KEY)
+    best_reflex = payload.get('best_reflex') or session.get(BEST_REFLEX_SESSION_KEY)
+    if not best_step1 or not best_reflex:
         return jsonify({
             'error': (
                 'Thiếu kết quả bài test. Hãy hoàn thành Wire Loop và Reflex Test trước khi tạo báo cáo.'
@@ -206,6 +223,11 @@ def generate_final_report():
         }), 400
 
     try:
+        career_service.update_test_metrics(
+            user_id=TEST_USER_ID,
+            ingenuous={'time': best_step1.get('time'), 'mistake': best_step1.get('errors')},
+            reflex={'time': best_reflex.get('time'), 'quantity': best_reflex.get('quantity')},
+        )
         report = career_service.generate_final_report(
             student_profile=student_profile,
             chat_history=chat_history,
@@ -222,25 +244,30 @@ def generate_final_report():
 
 @app.route('/api/university_recommendations', methods=['POST'])
 def university_recommendations():
-    student_profile = session.get('student_info')
+    payload = request.json or {}
+    student_profile = payload.get('student_info') or session.get('student_info')
     if not student_profile:
         return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
-    chat_history = session.get(CHAT_HISTORY_SESSION_KEY, [])
-    if not chat_history:
-        return jsonify({'error': 'Chưa có lịch sử trò chuyện.'}), 400
+    fit_jobs = (payload.get('fit_jobs') or '').strip()
+    if fit_jobs:
+        career_summary = f"Ngành nghề phù hợp: {fit_jobs}"
+    else:
+        chat_history = session.get(CHAT_HISTORY_SESSION_KEY, [])
+        if not chat_history:
+            return jsonify({'error': 'Chưa có lịch sử trò chuyện.'}), 400
 
-    career_summary = session.get(CAREER_SUMMARY_SESSION_KEY)
-    if not career_summary:
-        try:
-            career_summary = career_service.generate_career_summary(
-                student_profile=student_profile,
-                chat_history=chat_history,
-                user_id=TEST_USER_ID,
-            )
-            session[CAREER_SUMMARY_SESSION_KEY] = career_summary
-        except Exception as exc:
-            app.logger.exception("Failed to generate career summary for university search")
-            return jsonify({'error': 'Không thể tạo tóm tắt nghề nghiệp.'}), 500
+        career_summary = session.get(CAREER_SUMMARY_SESSION_KEY)
+        if not career_summary:
+            try:
+                career_summary = career_service.generate_career_summary(
+                    student_profile=student_profile,
+                    chat_history=chat_history,
+                    user_id=TEST_USER_ID,
+                )
+                session[CAREER_SUMMARY_SESSION_KEY] = career_summary
+            except Exception as exc:
+                app.logger.exception("Failed to generate career summary for university search")
+                return jsonify({'error': 'Không thể tạo tóm tắt nghề nghiệp.'}), 500
 
     try:
         recommendations = career_service.generate_university_recommendations(
@@ -261,7 +288,7 @@ def chat_with_ai():
     global model_accuracy
     payload = request.json or {}
     message = (payload.get('message') or '').strip()
-    student_profile = session.get('student_info')
+    student_profile = payload.get('student_info') or session.get('student_info')
     if session.get(CHAT_DONE_SESSION_KEY):
         return jsonify({
             'reply': 'Phần trò chuyện đã hoàn tất. Bạn có thể xem báo cáo hoặc gợi ý đại học nhé.',
@@ -277,7 +304,6 @@ def chat_with_ai():
         if student_profile:
             info_str = (
                 f"Học sinh: {student_profile.get('full_name')} | "
-                f"Giới tính: {student_profile.get('gender')} | "
                 f"Khối: {student_profile.get('grade')} | "
                 f"Lớp: {student_profile.get('class_name')}\n"
                 f"Nội dung: {message}"
@@ -339,27 +365,18 @@ def chat_with_ai():
 def save_student_info():
     data = request.json or {}
     full_name = (data.get('full_name') or '').strip()
-    gender = (data.get('gender') or '').strip()
     grade = (data.get('grade') or '').strip()
     class_name = (data.get('class_name') or '').strip()
-    age = (data.get('age') or '').strip()
 
-    if not all([full_name, gender, grade, class_name, age]):
+    if not all([full_name, grade, class_name]):
         return jsonify({'error': 'Thiếu thông tin học sinh.'}), 400
 
-    session['student_info'] = {
+    student_info = {
         'full_name': full_name,
-        'gender': gender,
         'grade': grade,
         'class_name': class_name,
-        'age': age
     }
-    session.pop(CHAT_HISTORY_SESSION_KEY, None)
-    session.pop(CAREER_SUMMARY_SESSION_KEY, None)
-    session.pop(CHARACTERISTIC_READY_SESSION_KEY, None)
-    session.pop(CHAT_DONE_SESSION_KEY, None)
-
-    return jsonify({'message': 'Đã lưu thông tin học sinh.', 'student_info': session['student_info']}), 200
+    return jsonify({'message': 'Đã lưu thông tin học sinh.', 'student_info': student_info}), 200
 
 # ===== SOCKET.IO EVENTS (Web Client) =====
 @socketio.on('connect')
@@ -406,6 +423,17 @@ def game_event_http():
             current_game_state['timestamp'] = current_time
             print(f">>> GAME FINISHED: T={time_val}, E={errors_val}")
             best_value, improved = _record_step1_result(time_val, errors_val)
+            all_done = (
+                session.get(BEST_STEP1_SESSION_KEY)
+                and session.get(BEST_REFLEX_SESSION_KEY)
+                and (
+                    session.get(CHAT_DONE_SESSION_KEY)
+                    or session.get(CHARACTERISTIC_READY_SESSION_KEY)
+                )
+            )
+            if all_done:
+                session['tests_in_progress'] = False
+                session['tests_completed'] = True
             response_payload.update({
                 "best": best_value,
                 "improved": improved,

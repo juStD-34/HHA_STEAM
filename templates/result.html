@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết Quả Tư Vấn</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .card {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="min-h-screen px-4 py-10 md:px-8">
+        <div class="max-w-6xl mx-auto space-y-8">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-white">Kết Quả Tư Vấn</h1>
+                    <p class="text-slate-300">Tổng hợp báo cáo nghề nghiệp và gợi ý đại học.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <a href="/test"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white">
+                        ← Quay lại bài test
+                    </a>
+                    <a href="/home"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:text-white">
+                        🏠 Trang chủ
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid gap-6 md:grid-cols-2">
+                <div class="card rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-xl font-bold text-white">📄 Báo cáo cá nhân hoá</h2>
+                        <span id="report-status"
+                            class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                            <p class="text-slate-400 text-xs uppercase tracking-wide">Họ và tên</p>
+                            <p id="report-name" class="text-white font-semibold mt-1">--</p>
+                        </div>
+                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                    <p class="text-slate-400 text-xs uppercase tracking-wide">Lớp</p>
+                    <p id="report-class" class="text-white font-semibold mt-1">--</p>
+                </div>
+                        <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
+                            <p class="text-slate-400 text-xs uppercase tracking-wide">Ngành nghề phù hợp</p>
+                            <p id="report-fit-job" class="text-emerald-300 font-semibold mt-1">--</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Giải thích</p>
+                        <p id="report-explanation" class="text-slate-100 text-sm leading-relaxed">--</p>
+                    </div>
+                </div>
+
+                <div class="card rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-xl font-bold text-white">🎓 Đại học phù hợp</h2>
+                        <span id="university-status"
+                            class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
+                    </div>
+                    <pre id="university-content"
+                        class="min-h-[220px] whitespace-pre-wrap text-slate-100 text-sm leading-relaxed">--</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const storedStudentInfo = sessionStorage.getItem('student_info');
+        const storedBestStep1 = sessionStorage.getItem('best_step1');
+        const storedBestReflex = sessionStorage.getItem('best_reflex');
+        const storedReportPayload = sessionStorage.getItem('final_report_payload');
+        const storedUniversityPayload = sessionStorage.getItem('university_payload');
+        const studentInfo = storedStudentInfo ? JSON.parse(storedStudentInfo) : ({{ student_info | tojson | default('null', true) }} || null);
+        const bestStep1 = storedBestStep1 ? JSON.parse(storedBestStep1) : null;
+        const bestReflex = storedBestReflex ? JSON.parse(storedBestReflex) : null;
+
+        const reportStatus = document.getElementById('report-status');
+        const reportNameEl = document.getElementById('report-name');
+        const reportClassEl = document.getElementById('report-class');
+        const reportFitJobEl = document.getElementById('report-fit-job');
+        let reportFitJobs = '';
+        const reportExplanationEl = document.getElementById('report-explanation');
+        const universityStatus = document.getElementById('university-status');
+        const universityContent = document.getElementById('university-content');
+        const cachedReportPayload = storedReportPayload ? JSON.parse(storedReportPayload) : null;
+        const cachedUniversityPayload = storedUniversityPayload ? JSON.parse(storedUniversityPayload) : null;
+
+        function escapeHtml(input) {
+            return (input || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderMarkdown(text) {
+            const escaped = escapeHtml(text);
+            const lines = escaped.split(/\r?\n/);
+            let html = '';
+            let inList = false;
+            const formatInline = (value) => {
+                const withBold = value.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                return withBold.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" class="text-emerald-300 underline" target="_blank" rel="noreferrer">$1</a>');
+            };
+            lines.forEach((line) => {
+                if (/^#{2,6}\s/.test(line)) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const level = Math.min(line.match(/^#+/)[0].length, 6);
+                    const content = line.replace(/^#{2,6}\s+/, '');
+                    html += `<h${level} class="mt-4 mb-2 text-slate-100 font-semibold">${formatInline(content)}</h${level}>`;
+                    return;
+                }
+                if (/^\*\s+/.test(line)) {
+                    if (!inList) {
+                        html += '<ul class="list-disc pl-5 space-y-1">';
+                        inList = true;
+                    }
+                    const item = line.replace(/^\*\s+/, '');
+                    html += `<li>${formatInline(item)}</li>`;
+                    return;
+                }
+                if (/^\d+\.\s+/.test(line)) {
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    const item = line.replace(/^\d+\.\s+/, '');
+                    html += `<p class="mt-2 text-slate-100 text-sm leading-relaxed font-semibold">${formatInline(item)}</p>`;
+                    return;
+                }
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+                if (line.trim() === '---') {
+                    html += '<hr class="my-4 border-slate-700">';
+                    return;
+                }
+                html += `<p class="text-slate-100 text-sm leading-relaxed">${formatInline(line)}</p>`;
+            });
+            if (inList) {
+                html += '</ul>';
+            }
+            return html;
+        }
+
+        function setStatus(el, text) {
+            if (el) {
+                el.textContent = text;
+            }
+        }
+
+        function applyReportPayload(payload) {
+            if (!payload) return;
+            if (reportNameEl) reportNameEl.textContent = payload.name || studentInfo?.full_name || '--';
+            if (reportClassEl) reportClassEl.textContent = payload.class || studentInfo?.class_name || '--';
+            if (reportFitJobEl) reportFitJobEl.textContent = payload.fit_job || '--';
+            if (reportExplanationEl) reportExplanationEl.textContent = payload.explanation || '--';
+            reportFitJobs = payload.fit_job || reportFitJobs;
+        }
+
+        function applyUniversityPayload(payload) {
+            if (!payload) return;
+            if (universityContent) {
+                universityContent.innerHTML = renderMarkdown(payload.recommendations || '--');
+            }
+        }
+
+        async function generateFinalReport() {
+            setStatus(reportStatus, "Đang xử lý");
+            console.log('final_report payload', {
+                student_info: studentInfo,
+                best_step1: bestStep1,
+                best_reflex: bestReflex
+            });
+            try {
+                const response = await fetch('/api/final_report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_info: studentInfo,
+                        best_step1: bestStep1,
+                        best_reflex: bestReflex
+                    })
+                });
+                const payload = await response.json();
+                if (!response.ok || payload.error) {
+                    throw new Error(payload.error || 'Không thể tạo báo cáo.');
+                }
+
+                applyReportPayload(payload);
+                reportFitJobs = payload.fit_job || '';
+                sessionStorage.setItem('final_report_payload', JSON.stringify(payload));
+                setStatus(reportStatus, "Hoàn tất");
+                return true;
+            } catch (err) {
+                setStatus(reportStatus, "Lỗi");
+                if (reportExplanationEl) {
+                    reportExplanationEl.textContent = err.message || 'Có lỗi xảy ra.';
+                }
+                return false;
+            }
+        }
+
+        async function getUniversitySuggestions() {
+            setStatus(universityStatus, "Đang xử lý");
+            try {
+                const response = await fetch('/api/university_recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_info: studentInfo,
+                        fit_jobs: reportFitJobs
+                    })
+                });
+                const payload = await response.json();
+                if (!response.ok || payload.error) {
+                    throw new Error(payload.error || 'Không thể tìm đại học phù hợp.');
+                }
+                applyUniversityPayload(payload);
+                sessionStorage.setItem('university_payload', JSON.stringify(payload));
+                setStatus(universityStatus, "Hoàn tất");
+            } catch (err) {
+                setStatus(universityStatus, "Lỗi");
+                if (universityContent) {
+                    universityContent.textContent = err.message || 'Có lỗi xảy ra.';
+                }
+            }
+        }
+
+        async function loadResultsSequentially() {
+            if (cachedReportPayload) {
+                applyReportPayload(cachedReportPayload);
+                reportFitJobs = cachedReportPayload.fit_job || reportFitJobs;
+                setStatus(reportStatus, "Đã lưu");
+            }
+            if (cachedUniversityPayload) {
+                applyUniversityPayload(cachedUniversityPayload);
+                setStatus(universityStatus, "Đã lưu");
+            }
+            if (cachedReportPayload && cachedUniversityPayload) {
+                return;
+            }
+            const reportOk = cachedReportPayload ? true : await generateFinalReport();
+            if (reportOk) {
+                if (!cachedUniversityPayload) {
+                    await getUniversitySuggestions();
+                }
+            } else {
+                setStatus(universityStatus, "Chờ báo cáo");
+                if (universityContent) {
+                    universityContent.textContent = "Cần báo cáo nghề nghiệp trước khi gợi ý đại học.";
+                }
+            }
+        }
+
+        if (studentInfo) {
+            loadResultsSequentially();
+        } else {
+            setStatus(reportStatus, "Thiếu dữ liệu");
+            setStatus(universityStatus, "Thiếu dữ liệu");
+            if (reportExplanationEl) {
+                reportExplanationEl.textContent = "Vui lòng quay lại trang test và nhập thông tin học sinh.";
+            }
+            if (universityContent) {
+                universityContent.textContent = "Vui lòng quay lại trang test và nhập thông tin học sinh.";
+            }
+        }
+    </script>
+</body>
+
+</html>

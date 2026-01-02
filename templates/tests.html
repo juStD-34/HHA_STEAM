@@ -205,7 +205,7 @@
 
     <!-- Student Info Modal -->
     <div id="student-info-modal"
-        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8 {{ 'hidden' if student_info and student_info.get('age') else '' }}">
+        class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8 {{ 'hidden' if student_info else '' }}">
         <form id="student-info-form"
             class="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl">
             <div>
@@ -220,22 +220,6 @@
                     <input id="student-fullname" type="text" required
                         class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-emerald-400 focus:outline-none"
                         placeholder="Ví dụ: Nguyễn Văn A">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">Tuổi</label>
-                    <input id="student-age" type="number" min="10" max="25" required
-                        class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-emerald-400 focus:outline-none"
-                        placeholder="17">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1">Giới tính</label>
-                    <select id="student-gender" required
-                        class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-emerald-400 focus:outline-none">
-                        <option value="" disabled selected>Chọn giới tính</option>
-                        <option value="Nam">Nam</option>
-                        <option value="Nữ">Nữ</option>
-                        <option value="Khác">Khác</option>
-                    </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 mb-1">Khối</label>
@@ -466,7 +450,7 @@
                         Hãy trò chuyện với chuyên gia AI để nhận phân tích sâu hơn về kết quả của bạn, lộ trình nghề nghiệp,
                         cũng như những kỹ năng cần rèn luyện tiếp theo.
                     </p>
-                    <button onclick="openChatModal()"
+                    <button onclick="openChatModal()" id="chat-open-btn"
                         class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all">
                         Mở khung trò chuyện
                     </button>
@@ -486,82 +470,11 @@
         <button onclick="getFinalAdvice()" id="get-result-btn"
             class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-1 opacity-50"
             disabled>
-            📘 Get Final Report
+            📘 Nhận báo cáo
         </button>
         <div id="characteristic-status"
             class="hidden mt-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-            ✅ Bạn đã hoàn thành phần DISC. Bạn có thể bấm “Get Final Report” để xem báo cáo.
-        </div>
-
-        <div id="result-card"
-            class="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-700 hidden">
-            <h2
-                class="text-3xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                Kết Quả Phân Tích</h2>
-
-            <div class="flex flex-col md:flex-row gap-8 mb-8">
-                <div class="flex-1 text-center p-6 bg-slate-800/50 rounded-xl border border-slate-700">
-                    <div class="text-sm text-slate-400 mb-2">Nhóm Tính Cách</div>
-                    <div id="group-result" class="text-5xl font-black text-white mb-2">?</div>
-                    <div id="desc-result" class="text-emerald-400 font-medium">--</div>
-                </div>
-
-                <div class="flex-[1.5]">
-                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                        <span class="text-blue-500">🚀</span> Nghề Nghiệp Đề Xuất
-                    </h3>
-                    <ul id="career-list" class="space-y-3">
-                        <!-- Items injected by JS -->
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div id="final-report-card"
-            class="hidden bg-slate-900/70 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between gap-3">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    📄 Báo cáo cá nhân hoá
-                </h3>
-                <span id="report-status" class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
-                    <p class="text-slate-400 text-xs uppercase tracking-wide">Họ và tên</p>
-                    <p id="report-name" class="text-white font-semibold mt-1">--</p>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
-                    <p class="text-slate-400 text-xs uppercase tracking-wide">Tuổi</p>
-                    <p id="report-age" class="text-white font-semibold mt-1">--</p>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
-                    <p class="text-slate-400 text-xs uppercase tracking-wide">Lớp</p>
-                    <p id="report-class" class="text-white font-semibold mt-1">--</p>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
-                    <p class="text-slate-400 text-xs uppercase tracking-wide">Ngành nghề phù hợp</p>
-                    <p id="report-fit-job" class="text-emerald-300 font-semibold mt-1">--</p>
-                </div>
-            </div>
-            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Giải thích</p>
-                <p id="report-explanation" class="text-slate-100 text-sm leading-relaxed">--</p>
-            </div>
-        </div>
-
-        <div class="mt-6 space-y-3">
-            <button onclick="getUniversitySuggestions()" id="get-university-btn"
-                class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-emerald-500/20 transition-all transform hover:-translate-y-1">
-                🎓 Get University Suggestions
-            </button>
-            <div id="university-card"
-                class="hidden bg-slate-900/70 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between gap-3">
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">🎓 Đại học phù hợp</h3>
-                    <span id="university-status" class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
-                </div>
-                <pre id="university-content" class="whitespace-pre-wrap text-slate-100 text-sm leading-relaxed">--</pre>
-            </div>
+            ✅ Bạn đã hoàn thành phần DISC. Bạn có thể bấm “Nhận báo cáo” để xem báo cáo.
         </div>
 
     </div>
@@ -614,8 +527,11 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         // State
-        let bestStep1 = {{ best_step1 | tojson | default('null', true) }} || null;
-        let bestReflex = {{ best_reflex | tojson | default('null', true) }} || null;
+        const storedStudentInfo = sessionStorage.getItem('student_info');
+        const storedBestStep1 = sessionStorage.getItem('best_step1');
+        const storedBestReflex = sessionStorage.getItem('best_reflex');
+        let bestStep1 = storedBestStep1 ? JSON.parse(storedBestStep1) : ({{ best_step1 | tojson | default('null', true) }} || null);
+        let bestReflex = storedBestReflex ? JSON.parse(storedBestReflex) : ({{ best_reflex | tojson | default('null', true) }} || null);
         let wireLoopResult = {
             time: bestStep1?.time || 0,
             errors: bestStep1?.errors || 0,
@@ -625,7 +541,7 @@
             score: bestReflex?.quantity || 0,
             done: Boolean(bestReflex)
         };
-        let studentInfo = {{ student_info | tojson | default('null', true) }} || null;
+        let studentInfo = storedStudentInfo ? JSON.parse(storedStudentInfo) : ({{ student_info | tojson | default('null', true) }} || null);
         let testsCompleted = {{ tests_completed | tojson | default('false') }} || false;
         let reflexBestScore = bestReflex?.quantity || 0;
         let lastTimestamp = 0;
@@ -649,24 +565,11 @@
         const studentForm = document.getElementById('student-info-form');
         const studentErrorEl = document.getElementById('student-info-error');
         const studentFullNameInput = document.getElementById('student-fullname');
-        const studentAgeInput = document.getElementById('student-age');
-        const studentGenderSelect = document.getElementById('student-gender');
         const studentGradeSelect = document.getElementById('student-grade');
         const studentClassInput = document.getElementById('student-class');
         const homeLink = document.getElementById('home-link');
         const homeLockMessage = document.getElementById('home-lock-message');
-        const reportCard = document.getElementById('final-report-card');
-        const reportStatus = document.getElementById('report-status');
-        const reportNameEl = document.getElementById('report-name');
-        const reportAgeEl = document.getElementById('report-age');
-        const reportClassEl = document.getElementById('report-class');
-        const reportFitJobEl = document.getElementById('report-fit-job');
-        const reportExplanationEl = document.getElementById('report-explanation');
         const characteristicStatusEl = document.getElementById('characteristic-status');
-        const universityBtn = document.getElementById('get-university-btn');
-        const universityCard = document.getElementById('university-card');
-        const universityStatus = document.getElementById('university-status');
-        const universityContent = document.getElementById('university-content');
         const chatDoneBanner = document.getElementById('chat-done-banner');
         let characteristicReady = {{ 'true' if characteristic_ready else 'false' }};
         let chatDone = {{ 'true' if chat_done else 'false' }};
@@ -753,12 +656,10 @@
         async function handleStudentInfoSubmit(event) {
             event.preventDefault();
             const fullName = (studentFullNameInput?.value || '').trim();
-            const age = (studentAgeInput?.value || '').trim();
-            const gender = studentGenderSelect?.value || '';
             const grade = studentGradeSelect?.value || '';
             const className = (studentClassInput?.value || '').trim();
 
-            if (!fullName || !age || !gender || !grade || !className) {
+            if (!fullName || !grade || !className) {
                 if (studentErrorEl) {
                     studentErrorEl.textContent = "Vui lòng điền đầy đủ thông tin.";
                     studentErrorEl.classList.remove('hidden');
@@ -772,8 +673,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         full_name: fullName,
-                        age,
-                        gender,
                         grade,
                         class_name: className
                     })
@@ -784,11 +683,10 @@
                 }
                 studentInfo = data.student_info || {
                     full_name: fullName,
-                    age,
-                    gender,
                     grade,
                     class_name: className
                 };
+                sessionStorage.setItem('student_info', JSON.stringify(studentInfo));
                 if (studentErrorEl) {
                     studentErrorEl.classList.add('hidden');
                 }
@@ -879,17 +777,27 @@
                 updateStep1Status(false);
             } else if (data.status === 'finished' && data.timestamp > lastTimestamp) {
                 lastTimestamp = data.timestamp;
-                document.getElementById('input-time').value = data.time;
-                document.getElementById('input-errors').value = data.errors;
-                document.getElementById('display-time').innerText = data.time;
-                document.getElementById('display-errors').innerText = data.errors;
-                wireLoopResult.time = data.time;
-                wireLoopResult.errors = data.errors;
+                const bestData = data.best || { time: data.time, errors: data.errors };
+                bestStep1 = bestData;
+                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                document.getElementById('input-time').value = bestData.time;
+                document.getElementById('input-errors').value = bestData.errors;
+                document.getElementById('display-time').innerText = bestData.time;
+                document.getElementById('display-errors').innerText = bestData.errors;
+                wireLoopResult.time = bestData.time;
+                wireLoopResult.errors = bestData.errors;
                 wireLoopResult.done = true;
+                setStep1Best(bestData);
                 showLiveMonitor(false);
                 document.getElementById('step1-manual-form').classList.add('hidden');
                 document.getElementById('step1-result-display').classList.remove('hidden');
                 updateStep1Status(true);
+                if (typeof data.improved === 'boolean') {
+                    const successMsg = data.improved
+                        ? "🎉 Kỷ lục mới cho Wire Loop!"
+                        : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
+                    setInlineMessage(step1MessageEl, successMsg, false);
+                }
             }
         });
 
@@ -898,15 +806,26 @@
         // Manual Input Listener Step 1
         const inputTime = document.getElementById('input-time');
         const inputErrors = document.getElementById('input-errors');
+        let wireLoopAutosaveTimer = null;
         function onManualInput() {
             if (inputTime.value !== '' && inputErrors.value !== '') {
                 updateStep1Status(true);
             } else {
                 updateStep1Status(false);
             }
+            if (wireLoopAutosaveTimer) {
+                clearTimeout(wireLoopAutosaveTimer);
+            }
+            if (inputTime.value !== '' && inputErrors.value !== '') {
+                wireLoopAutosaveTimer = setTimeout(() => {
+                    saveWireLoopIfNeeded();
+                }, 400);
+            }
         }
         inputTime.addEventListener('input', onManualInput);
         inputErrors.addEventListener('input', onManualInput);
+        inputTime.addEventListener('blur', () => saveWireLoopIfNeeded());
+        inputErrors.addEventListener('blur', () => saveWireLoopIfNeeded());
 
         function setInlineMessage(el, text, isError = false) {
             if (!el) return;
@@ -947,6 +866,7 @@
                 wireLoopResult.time = bestData.time;
                 wireLoopResult.errors = bestData.errors;
                 wireLoopResult.done = true;
+                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
                 inputTime.value = bestData.time;
                 inputErrors.value = bestData.errors;
                 document.getElementById('display-time').innerText = bestData.time;
@@ -965,6 +885,35 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+
+        async function saveWireLoopIfNeeded() {
+            if (wireLoopResult.done && bestStep1) return true;
+            const timeVal = parseFloat(inputTime.value);
+            const errorVal = parseInt(inputErrors.value);
+            if (isNaN(timeVal) || isNaN(errorVal)) return false;
+            try {
+                const response = await fetch('/api/game_event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event: 'finish', time: timeVal, errors: errorVal })
+                });
+                const data = await response.json();
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || 'Không thể lưu kết quả.');
+                }
+                const bestData = data.best || { time: timeVal, errors: errorVal };
+                bestStep1 = bestData;
+                wireLoopResult.time = bestData.time;
+                wireLoopResult.errors = bestData.errors;
+                wireLoopResult.done = true;
+                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                setStep1Best(bestData);
+                return true;
+            } catch (err) {
+                setInlineMessage(step1MessageEl, err.message || 'Có lỗi xảy ra.', true);
+                return false;
             }
         }
 
@@ -1129,8 +1078,9 @@
             setInlineMessage(step2MessageEl, "⏳ Đang gửi kết quả...", false);
             try {
                 const payload = await saveReflexResult(REFLEX_DURATION_SECONDS, reflexScore);
-                const bestData = payload.best || { quantity: reflexScore };
+                const bestData = payload.best || { quantity: reflexScore, time: REFLEX_DURATION_SECONDS };
                 bestReflex = bestData;
+                sessionStorage.setItem('best_reflex', JSON.stringify(bestData));
                 reflexBestScore = bestData.quantity || reflexScore;
                 whackResult.score = reflexBestScore;
                 whackResult.done = true;
@@ -1177,172 +1127,37 @@
                     return;
                 }
             }
-            const allDone = wireLoopResult.done && whackResult.done;
+            const allDone = wireLoopResult.done && whackResult.done && (chatDone || characteristicReady);
             if (!allDone) {
                 const proceed = confirm(
-                    "Bạn chưa hoàn thành tất cả bài test. Báo cáo có thể không chính xác.\n\nNhấn OK để lấy báo cáo, hoặc Cancel để tiếp tục làm bài."
+                    "Bạn chưa hoàn thành tất cả bài test. Báo cáo có thể không chính xác.\n\nNhấn OK để tiếp tục, hoặc Cancel để tiếp tục làm bài."
                 );
                 if (!proceed) {
                     return;
                 }
             }
-
-            const t = parseFloat(document.getElementById('input-time').value);
-            const e = parseInt(document.getElementById('input-errors').value);
-            const s = whackResult.score;
-
             const reportBtn = document.getElementById('get-result-btn');
 
             try {
                 if (reportBtn) {
-                    reportBtn.innerText = "⏳ Đang phân tích...";
+                    reportBtn.innerText = "⏳ Đang chuyển...";
                 }
-
-                if (!isNaN(t) && !isNaN(e)) {
-                    const response = await fetch('/predict', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ time: t, errors: e, score: s })
-                    });
-                    const data = await response.json();
-
-                    if (data.error) { alert('Lỗi: ' + data.error); return; }
-
-                    // Display prediction summary
-                    const groupEl = document.getElementById('group-result');
-                    groupEl.innerText = data.group;
-                    groupEl.className = "text-5xl font-black mb-2 " + (data.group === 'A' ? "text-blue-500" : data.group === 'B' ? "text-emerald-500" : "text-purple-500");
-
-                    let desc = "";
-                    if (data.group === 'A') {
-                        desc = "Người điều hành: Phản xạ thần tốc & Kiểm soát tình huống tuyệt vời.";
-                    } else if (data.group === 'B') {
-                        desc = "Nghệ nhân: Đôi tay khéo léo, tỉ mỉ & Sự tập trung bền bỉ.";
-                    } else {
-                        desc = "Nhà chiến lược: Thiên hướng Tư duy quản lý & Phân tích (ít thiên về thao tác).";
-                    }
-                    document.getElementById('desc-result').innerText = desc;
-
-                    const list = document.getElementById('career-list');
-                    list.innerHTML = '';
-                    data.careers.forEach(c => {
-                        list.innerHTML += `<li class="p-3 bg-slate-900 rounded-lg border border-slate-700 flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>${c}
-                        </li>`
-                    });
-
-                    document.getElementById('result-card').classList.remove('hidden');
-                    document.getElementById('result-card').scrollIntoView({ behavior: "smooth" });
+                const saved = await saveWireLoopIfNeeded();
+                if (!saved && !wireLoopResult.done) {
+                    throw new Error('Vui lòng nhập và lưu kết quả Wire Loop trước.');
                 }
-
+                ensureBestResultsStored();
+                window.location.href = "/result";
                 if (reportBtn) {
-                    reportBtn.innerText = "⏳ Đang tạo báo cáo...";
-                }
-                await generateFinalReport();
-                if (reportBtn) {
-                    reportBtn.innerText = "📘 Get Final Report";
+                    reportBtn.innerText = "📘 Nhận báo cáo";
                 }
 
             } catch (err) {
                 console.error(err);
                 alert(err.message || 'Lỗi kết nối server!');
                 if (reportBtn) {
-                    reportBtn.innerText = "📘 Get Final Report";
+                    reportBtn.innerText = "📘 Nhận báo cáo";
                 }
-            }
-        }
-
-        async function generateFinalReport() {
-            if (reportCard) {
-                reportCard.classList.remove('hidden');
-            }
-            if (reportStatus) {
-                reportStatus.textContent = "Đang xử lý";
-            }
-            try {
-                const response = await fetch('/api/final_report', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                const payload = await response.json();
-                if (!response.ok || payload.error) {
-                    throw new Error(payload.error || 'Không thể tạo báo cáo.');
-                }
-
-                if (reportNameEl) reportNameEl.textContent = payload.name || studentInfo?.full_name || '--';
-                if (reportAgeEl) reportAgeEl.textContent = payload.age || studentInfo?.age || '--';
-                if (reportClassEl) reportClassEl.textContent = payload.class || studentInfo?.class_name || '--';
-                if (reportFitJobEl) reportFitJobEl.textContent = payload.fit_job || '--';
-                if (reportExplanationEl) reportExplanationEl.textContent = payload.explanation || '--';
-                if (reportStatus) {
-                    reportStatus.textContent = "Hoàn tất";
-                }
-                if (universityBtn) {
-                    universityBtn.disabled = false;
-                    universityBtn.classList.remove('opacity-50');
-                }
-                testsCompleted = true;
-                updateHomeLinkState();
-            } catch (err) {
-                if (reportStatus) {
-                    reportStatus.textContent = "Lỗi";
-                }
-                throw err;
-            }
-        }
-
-        async function getUniversitySuggestions() {
-            if (!studentInfo) {
-                alert("Vui lòng nhập thông tin học sinh trước khi xem gợi ý đại học.");
-                showStudentInfoModal();
-                return;
-            }
-            if (!chatDone) {
-                const proceed = confirm(
-                    "Bạn chưa hoàn thành phần trò chuyện DISC. Gợi ý có thể không chính xác.\n\nNhấn OK để tiếp tục, hoặc Cancel để quay lại trò chuyện."
-                );
-                if (!proceed) {
-                    return;
-                }
-            }
-            const allDone = wireLoopResult.done && whackResult.done;
-            if (!allDone) {
-                const proceed = confirm(
-                    "Bạn chưa hoàn thành tất cả bài test. Gợi ý có thể không chính xác.\n\nNhấn OK để tiếp tục, hoặc Cancel để tiếp tục làm bài."
-                );
-                if (!proceed) {
-                    return;
-                }
-            }
-            if (universityCard) {
-                universityCard.classList.remove('hidden');
-            }
-            if (universityStatus) {
-                universityStatus.textContent = "Đang xử lý";
-            }
-            try {
-                const response = await fetch('/api/university_recommendations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                const payload = await response.json();
-                if (!response.ok || payload.error) {
-                    throw new Error(payload.error || 'Không thể tìm đại học phù hợp.');
-                }
-                if (universityContent) {
-                    universityContent.textContent = payload.recommendations || '--';
-                }
-                if (universityStatus) {
-                    universityStatus.textContent = "Hoàn tất";
-                }
-                universityCard.scrollIntoView({ behavior: "smooth" });
-            } catch (err) {
-                if (universityStatus) {
-                    universityStatus.textContent = "Lỗi";
-                }
-                alert(err.message || 'Lỗi kết nối server!');
             }
         }
 
@@ -1357,7 +1172,6 @@
                 if (chatDoneBanner) {
                     chatDoneBanner.classList.remove('hidden');
                 }
-                chatInput.disabled = true;
                 chatSendBtn.disabled = true;
             }
             setTimeout(() => chatInput.focus(), 100);
@@ -1365,6 +1179,18 @@
 
         function closeChatModal() {
             chatModal.classList.add('hidden');
+        }
+
+        function ensureBestResultsStored() {
+            if (wireLoopResult.done && bestStep1) {
+                sessionStorage.setItem('best_step1', JSON.stringify(bestStep1));
+            }
+            if (whackResult.done) {
+                if (!bestReflex) {
+                    bestReflex = { quantity: whackResult.score, time: REFLEX_DURATION_SECONDS };
+                }
+                sessionStorage.setItem('best_reflex', JSON.stringify(bestReflex));
+            }
         }
 
         function sanitizeMarkdownEmphasis(input) {
@@ -1398,7 +1224,15 @@
         function setChatLoading(state) {
             chatWaiting = state;
             chatSendBtn.disabled = state;
-            chatSendBtn.textContent = state ? 'Đang trả lời...' : 'Gửi';
+            chatSendBtn.textContent = state ? 'Đang trả lời...' : (chatDone ? 'Đã hoàn tất' : 'Gửi');
+        }
+
+        function stripFinalConclusion(text) {
+            const normalized = (text || '').toLowerCase();
+            const marker = 'kết luận cuối';
+            const idx = normalized.indexOf(marker);
+            if (idx === -1) return text || '';
+            return (text || '').slice(0, idx).trim();
         }
 
         async function sendChatMessage() {
@@ -1418,13 +1252,14 @@
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, student_info: studentInfo })
                 });
                 const data = await response.json();
                 if (data.error) {
                     appendChatMessage('bot', 'Xin lỗi, tôi chưa nhận được câu hỏi. Vui lòng thử lại nhé!');
                 } else {
-                    appendChatMessage('bot', data.reply);
+                    const replyText = stripFinalConclusion(data.reply || '');
+                    appendChatMessage('bot', replyText || data.reply || '');
                     if (data.characteristic_ready) {
                         characteristicReady = true;
                         if (characteristicStatusEl) {
@@ -1432,14 +1267,14 @@
                         }
                         checkAllDone();
                     }
-                    const replyText = data.reply || '';
-                    if (data.chat_done || replyText.toLowerCase().includes('kết luận cuối')) {
+                    const rawReplyText = data.reply || '';
+                    if (data.chat_done || rawReplyText.toLowerCase().includes('kết luận cuối')) {
                         chatDone = true;
                         if (chatDoneBanner) {
                             chatDoneBanner.classList.remove('hidden');
                         }
-                        chatInput.disabled = true;
                         chatSendBtn.disabled = true;
+                        chatSendBtn.textContent = 'Đã hoàn tất';
                     }
                 }
             } catch (err) {
@@ -1464,12 +1299,12 @@
         }
         if (chatDone && chatDoneBanner) {
             chatDoneBanner.classList.remove('hidden');
-            chatInput.disabled = true;
             chatSendBtn.disabled = true;
+            chatSendBtn.textContent = 'Đã hoàn tất';
         }
         checkAllDone();
         updateHomeLinkState();
-        if (studentInfo && studentInfo.age) {
+        if (studentInfo) {
             hideStudentInfoModal();
         } else {
             showStudentInfoModal();

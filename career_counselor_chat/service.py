@@ -343,10 +343,8 @@ class CareerCounselorService:
     ) -> str:
         profile_line = (
             f"Học sinh: name={student_profile.get('full_name', '')}, "
-            f"age={student_profile.get('age', '')}, "
             f"class={student_profile.get('class_name', '')}, "
-            f"grade={student_profile.get('grade', '')}, "
-            f"gender={student_profile.get('gender', '')}"
+            f"grade={student_profile.get('grade', '')}"
         )
         lines = [
             "TASK: REPORT",
@@ -359,7 +357,7 @@ class CareerCounselorService:
         if test_context:
             lines.append(test_context)
         lines.append(
-            "Yeu cau: goi ReportAgent va tra ve JSON voi keys name, age, class, fit_job, explanation."
+            "Yeu cau: goi ReportAgent va tra ve JSON voi keys name, class, fit_job, explanation."
         )
         return "\n".join(filter(None, lines))
 
@@ -410,10 +408,8 @@ class CareerCounselorService:
     ) -> str:
         profile_line = (
             f"Học sinh: {student_profile.get('full_name', '')} | "
-            f"Giới tính: {student_profile.get('gender', '')} | "
             f"Khối: {student_profile.get('grade', '')} | "
-            f"Lớp: {student_profile.get('class_name', '')} | "
-            f"Tuổi: {student_profile.get('age', '')}"
+            f"Lớp: {student_profile.get('class_name', '')}"
         )
         lines = [profile_line, "Lịch sử hội thoại:"]
         for entry in chat_history:
@@ -537,7 +533,7 @@ class CareerCounselorService:
         except json.JSONDecodeError as exc:  # pragma: no cover - depends on agent output
             raise ValueError("Report agent returned invalid JSON.") from exc
 
-        for key in ("name", "age", "class", "fit_job", "explanation"):
+        for key in ("name", "class", "fit_job", "explanation"):
             data.setdefault(key, "")
         return data
 

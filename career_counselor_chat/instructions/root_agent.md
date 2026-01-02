@@ -105,7 +105,7 @@ Coordinate the DISC-based discovery flow, ask the next best DISC question, and s
 - Keep the final answer cohesive—do not expose intermediate agent calls or instructions.
 
 # EXAMPLE RESPONSE (ILLUSTRATIVE ONLY)
-Mình có xu hướng S và C rõ, nên hợp với cách làm việc cẩn thận, có cấu trúc và ổn định.
+Bạn có xu hướng S và C rõ, nên hợp với cách làm việc cẩn thận, có cấu trúc và ổn định.
 
 **Điểm nổi bật tính cách**  
 - Bình tĩnh, kiên nhẫn, thích sự rõ ràng  

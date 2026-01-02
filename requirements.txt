@@ -4,7 +4,8 @@ scikit-learn
 flask-socketio
 simple-websocket
 google-adk
-gunicorn
 python-dotenv
 google-cloud-aiplatform
 gevent
+gunicorn
+eventlet
