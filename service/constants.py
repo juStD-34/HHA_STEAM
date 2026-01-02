@@ -1,0 +1,11 @@
+DATA_FILE = 'career_data.csv'
+PROTECTED_PREFIXES = ('/api/', '/predict', '/chat')
+DEVICE_UNRESTRICTED_ENDPOINTS = ('/api/game_event',)
+UNRESTRICTED_ENDPOINTS = ('static', 'access_gate', 'health_check')
+TEST_USER_ID = "web_chat_user"
+BEST_STEP1_SESSION_KEY = "best_step1"
+BEST_REFLEX_SESSION_KEY = "best_reflex"
+CHAT_HISTORY_SESSION_KEY = "chat_history"
+CAREER_SUMMARY_SESSION_KEY = "career_summary"
+CHARACTERISTIC_READY_SESSION_KEY = "characteristic_ready"
+CHAT_DONE_SESSION_KEY = "chat_done"
