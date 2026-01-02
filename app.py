@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import os
 import tempfile
-# from flask_socketio import SocketIO, emit  # Socket.IO disabled for now
+from flask_socketio import SocketIO, emit
 import json
 import sys
 import logging
@@ -14,7 +14,7 @@ import hmac
 
 # Load env before importing services that rely on it
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 from career_counselor_chat.service import career_service
 
@@ -42,7 +42,7 @@ _bootstrap_google_credentials()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['ACCESS_KEY'] = os.environ.get('APP_ACCESS_KEY', 'enter-demo-key')  # change in production
-# socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global variables to store model and data
 model = None
@@ -57,6 +57,7 @@ current_game_state = {
 }
 data_file = 'career_data.csv'
 PROTECTED_PREFIXES = ('/api/', '/predict', '/chat')
+DEVICE_UNRESTRICTED_ENDPOINTS = ('/api/game_event',)
 UNRESTRICTED_ENDPOINTS = ('static', 'access_gate', 'health_check')
 TEST_USER_ID = "web_chat_user"
 BEST_STEP1_SESSION_KEY = "best_step1"
@@ -74,6 +75,8 @@ def enforce_access():
     if not app.config.get('ACCESS_KEY'):
         return
     if request.endpoint in UNRESTRICTED_ENDPOINTS:
+        return
+    if request.path in DEVICE_UNRESTRICTED_ENDPOINTS:
         return
     if has_access():
         return
@@ -359,14 +362,14 @@ def save_student_info():
     return jsonify({'message': 'Đã lưu thông tin học sinh.', 'student_info': session['student_info']}), 200
 
 # ===== SOCKET.IO EVENTS (Web Client) =====
-# @socketio.on('connect')
-# def handle_connect():
-#     print('Web Client connected')
-#     emit('game_update', current_game_state)
+@socketio.on('connect')
+def handle_connect():
+    print('Web Client connected')
+    emit('game_update', current_game_state)
 
-# @socketio.on('disconnect')
-# def handle_disconnect():
-#     print('Web Client disconnected')
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Web Client disconnected')
 
 # ===== HTTP API FOR ESP32 (Robust Bridge) =====
 @app.route('/api/game_event', methods=['POST'])
@@ -386,7 +389,7 @@ def game_event_http():
             current_game_state['time'] = 0.0
             current_game_state['errors'] = 0
             current_game_state['timestamp'] = current_time
-            print(">>> GAME STARTED")
+            app.logger.info(">>> GAME STARTED")
             
         elif event == 'update':
             current_game_state['status'] = 'playing'
@@ -408,7 +411,13 @@ def game_event_http():
                 "improved": improved,
             })
 
-        # socketio.emit('game_update', current_game_state)
+        socket_payload = dict(current_game_state)
+        if event == 'finish':
+            socket_payload.update({
+                "best": response_payload.get("best"),
+                "improved": response_payload.get("improved"),
+            })
+        socketio.emit('game_update', socket_payload)
         return jsonify(response_payload)
         
     except Exception as e:
@@ -445,8 +454,8 @@ def health_check():
 
 if __name__ == '__main__':
     train_model()
-    # Use standard app.run() which works perfectly with threading mode
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', '5000'))
+    socketio.run(app, host='0.0.0.0', port=port, debug=True)
 
 def _reset_session_state():
     """Clear session flags and cached test metrics for a fresh attempt."""

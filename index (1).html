@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Tư Vấn Nghề Nghiệp Đa Năng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .chu{
+            margin-bottom: 77px !important;
+        }
+
+        .card {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #1e293b;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Whack-a-Mole Styles */
+        .hole {
+            background-color: #334155;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: inset 0 8px 0 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .mole {
+            width: 80%;
+            height: 80%;
+            background-color: #ef4444;
+            border-radius: 50%;
+            position: absolute;
+            top: 100%;
+            left: 10%;
+            transition: top 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .mole.up {
+            top: 10%;
+        }
+
+        .mole::after {
+            content: '🐭';
+            font-size: 24px;
+        }
+
+        .result-highlight {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-[#0f172a] p-0 m-0">
+
+    <!-- Hero Section (Full Width) -->
+    <div class="relative w-full h-[65vh] min-h-[500px] overflow-hidden group border-b border-white/10">
+        <!-- Background Image -->
+        <div class="absolute inset-0">
+            <img src="{{ url_for('static', filename='img/school_overview.jpg') }}" alt="THPT A Hải Hậu"
+                class="w-full h-full object-cover transform transition-transform duration-[20s] group-hover:scale-110">
+
+            <!-- Light Overlay (Reduced opacity) -->
+            <div class="absolute inset-0 bg-slate-900/40"></div>
+
+            <!-- Bottom Gradient Fade -->
+            <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#0f172a] to-transparent"></div>
+        </div>
+
+        <!-- Hero Content -->
+        <div class="relative z-10 h-full flex flex-col items-center justify-center text-center px-4">
+            <div class="">
+                <p
+                    class="chu text-emerald-300 font-bold tracking-[0.2em] uppercase text-sm mb-4 drop-shadow-md bg-slate-900/50 inline-block px-4 py-1 rounded-full border border-emerald-500/20">
+                    🏫 Dự án thuộc trường THPT A Hải Hậu
+                </p>
+                <h1 class="text-4xl md:text-7xl font-black mb-6 text-white leading-tight drop-shadow-2xl">
+                    Hệ Thống Đánh Giá & <br>
+                    <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-teal-400 filter drop-shadow-lg">
+                        Tư Vấn Nghề Nghiệp
+                    </span>
+                </h1>
+
+                <p class="text-slate-100 max-w-2xl mx-auto mb-8 text-lg font-medium leading-relaxed drop-shadow-lg">
+                    Hệ thống phân tích tố chất học sinh thông qua: <br class="hidden md:block">
+                    <span class="text-blue-300 font-bold">Độ Khéo Léo (Wire Loop)</span> & <span
+                        class="text-yellow-300 font-bold">Tốc Độ Phản Xạ</span>
+                </p>
+
+                <div
+                    class="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-slate-900/60 border border-emerald-500/30 text-emerald-300 text-sm font-bold backdrop-blur-md hover:bg-slate-900/80 transition-colors cursor-default">
+                    <span class="relative flex h-3 w-3">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    Độ chính xác AI: {{ accuracy }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="max-w-4xl mx-auto space-y-8 p-4 md:p-8 mt-8 relative z-20">
+
+        <!-- Rules Section -->
+        <div class="card p-6 rounded-2xl fade-in">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-2xl">📋</span>
+                <h2 class="text-xl font-bold">Quy Trình Kiểm Tra</h2>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                    <h3 class="font-bold text-blue-400 mb-2">Bài 1: Khéo Léo & Kiên Nhẫn</h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Sử dụng bộ thiết bị <strong>Wire Loop</strong>. Di chuyển tay cầm kim loại từ điểm A đến C mà
+                        không chạm vào đường dây.
+                        <br>
+                        🎯 <strong>Mục tiêu:</strong> Thời gian ngắn nhất + Số lần chạm ít nhất.
+                    </p>
+                </div>
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                    <h3 class="font-bold text-yellow-500 mb-2">Bài 2: Tốc Độ Phản Xạ</h3>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Chơi game <strong>Đập Chuột</strong> ngay trên màn hình. Chuột sẽ xuất hiện ngẫu nhiên trong 10
+                        giây.
+                        <br>
+                        ⚡ <strong>Mục tiêu:</strong> Đập trúng càng nhiều chuột càng tốt.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game 1: Wire Loop -->
+        <div class="card p-6 rounded-2xl fade-in border-l-4 border-blue-500 relative overflow-hidden" id="step1-card">
+            <div class="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black">1</div>
+            <div class="flex items-center gap-4 mb-6 relative z-10">
+                <div class="step-number">1</div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Kiểm Tra Khéo Léo (Wire Loop)</h2>
+                    <p class="text-slate-400 text-sm">Kết nối với thiết bị ESP32 hoặc nhập thủ công</p>
+                </div>
+            </div>
+
+            <!-- Live Monitor UI -->
+            <div id="live-monitor" class="hidden mb-6 bg-slate-900/80 p-6 rounded-xl border border-blue-500/30">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-blue-400 font-bold uppercase tracking-wider text-xs">● Đang kết nối thiết
+                        bị</span>
+                    <span class="text-slate-500 text-xs font-mono">LIVE DATA</span>
+                </div>
+                <div class="grid grid-cols-2 gap-8 text-center">
+                    <div>
+                        <div class="text-slate-400 text-xs mb-1">Thời Gian</div>
+                        <div class="text-3xl font-mono font-bold text-white"><span id="live-time">0.0</span>s</div>
+                    </div>
+                    <div>
+                        <div class="text-slate-400 text-xs mb-1">Số Lỗi</div>
+                        <div class="text-3xl font-mono font-bold text-red-500" id="live-errors">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1 Result Display (Auto-filled) -->
+            <div id="step1-result-display" class="hidden mb-6 bg-slate-800 p-6 rounded-xl border border-emerald-500/50">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-emerald-400 font-bold uppercase tracking-wider text-sm">✅ Kết quả từ thiết
+                        bị</span>
+                    <button onclick="resetStep1()" class="text-slate-400 text-xs hover:text-white underline">Nhập lại
+                        thủ công</button>
+                </div>
+                <div class="grid grid-cols-2 gap-8 text-center">
+                    <div>
+                        <div class="text-slate-400 text-xs mb-1">Thời Gian</div>
+                        <div class="text-3xl font-mono font-bold text-white"><span id="display-time">0.0</span>s</div>
+                    </div>
+                    <div>
+                        <div class="text-slate-400 text-xs mb-1">Số Lỗi</div>
+                        <div class="text-3xl font-mono font-bold text-red-500" id="display-errors">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Input Form -->
+            <div id="step1-manual-form">
+                <div class="mb-4">
+                    <p class="text-slate-400 text-sm italic border-l-2 border-slate-600 pl-3">
+                        * Nếu không kết nối thiết bị IoT, hãy nhập kết quả thủ công vào bên dưới:
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Thời gian (giây)</label>
+                        <input type="number" id="input-time"
+                            class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none transition-colors"
+                            placeholder="0.0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Số lần chạm (lỗi)</label>
+                        <input type="number" id="input-errors"
+                            class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none transition-colors"
+                            placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <div id="step1-status"
+                class="mt-4 hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
+                <span>✅ Đã ghi nhận kết quả Bước 1!</span>
+            </div>
+        </div>
+
+        <!-- Game 2: Whack-a-Mole -->
+        <div class="card p-6 rounded-2xl fade-in border-l-4 border-yellow-500 relative overflow-hidden" id="step2-card">
+            <div class="absolute top-0 right-0 p-4 opacity-5 text-9xl font-black">2</div>
+            <div class="flex items-center gap-4 mb-6 relative z-10">
+                <div class="step-number bg-gradient-to-br from-yellow-500 to-orange-500 !shadow-yellow-500/50">2</div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Kiểm Tra Phản Xạ (Đập Chuột)</h2>
+                    <p class="text-slate-400 text-sm">Nhấn "Bắt Đầu" và chơi trong 10 giây</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Game Board -->
+                <div class="flex-1">
+                    <div
+                        class="grid grid-cols-3 gap-3 bg-slate-900 p-4 rounded-xl border border-slate-700 max-w-[300px] mx-auto">
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="0">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="1">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="2">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="3">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="4">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="5">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="6">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="7">
+                            <div class="mole"></div>
+                        </div>
+                        <div class="hole w-16 h-16 sm:w-20 sm:h-20" data-index="8">
+                            <div class="mole"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info & Controls -->
+                <div class="flex-1 flex flex-col justify-center space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-900/50 p-3 rounded-lg text-center border border-slate-700">
+                            <span class="block text-xs text-slate-400">Thời gian</span>
+                            <span id="game-time" class="text-2xl font-bold text-blue-400">10</span>s
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-lg text-center border border-slate-700">
+                            <span class="block text-xs text-slate-400">Điểm Số</span>
+                            <span id="game-score" class="text-2xl font-bold text-yellow-500">0</span>
+                        </div>
+                    </div>
+                    <button onclick="startGame()" id="start-game-btn"
+                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-yellow-500/20 active:scale-95">
+                        Bắt Đầu Chơi
+                    </button>
+                    <div id="step2-status"
+                        class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2 text-emerald-500 text-sm font-bold">
+                        <span>✅ Đã hoàn thành!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Result Section -->
+        <button onclick="getFinalAdvice()" id="get-result-btn"
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-1 opacity-50 cursor-not-allowed">
+            📊 Phân Tích & Xem Kết Quả
+        </button>
+
+        <div id="result-card"
+            class="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-700 hidden">
+            <h2
+                class="text-3xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                Kết Quả Phân Tích</h2>
+
+            <div class="flex flex-col md:flex-row gap-8 mb-8">
+                <div class="flex-1 text-center p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <div class="text-sm text-slate-400 mb-2">Nhóm Tính Cách</div>
+                    <div id="group-result" class="text-5xl font-black text-white mb-2">?</div>
+                    <div id="desc-result" class="text-emerald-400 font-medium">--</div>
+                </div>
+
+                <div class="flex-[1.5]">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                        <span class="text-blue-500">🚀</span> Nghề Nghiệp Đề Xuất
+                    </h3>
+                    <ul id="career-list" class="space-y-3">
+                        <!-- Items injected by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        // State
+        let wireLoopResult = { time: 0, errors: 0, done: false };
+        let whackResult = { score: 0, done: false };
+        let lastTimestamp = 0;
+
+        // --- Socket.IO Connection (Step 1) ---
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('game_update', (data) => {
+            if (data && data.status !== 'idle') {
+                if (data.status === 'playing') {
+                    document.getElementById('live-monitor').classList.remove('hidden');
+                    document.getElementById('step1-manual-form').classList.remove('hidden');
+                    document.getElementById('step1-result-display').classList.add('hidden');
+
+                    document.getElementById('live-time').innerText = data.time.toFixed(1);
+                    document.getElementById('live-errors').innerText = data.errors;
+                }
+                else if (data.status === 'finished' && data.timestamp > lastTimestamp) {
+                    lastTimestamp = data.timestamp;
+
+                    // Lock Step 1
+                    document.getElementById('input-time').value = data.time;
+                    document.getElementById('input-errors').value = data.errors;
+
+                    document.getElementById('display-time').innerText = data.time;
+                    document.getElementById('display-errors').innerText = data.errors;
+
+                    document.getElementById('live-monitor').classList.add('hidden');
+                    document.getElementById('step1-manual-form').classList.add('hidden');
+                    document.getElementById('step1-result-display').classList.remove('hidden');
+
+                    updateStep1Status(true);
+                }
+            }
+        });
+
+        // Manual Input Listener Step 1
+        const inputTime = document.getElementById('input-time');
+        const inputErrors = document.getElementById('input-errors');
+        function onManualInput() {
+            if (inputTime.value !== '' && inputErrors.value !== '') {
+                updateStep1Status(true);
+            } else {
+                updateStep1Status(false);
+            }
+        }
+        inputTime.addEventListener('input', onManualInput);
+        inputErrors.addEventListener('input', onManualInput);
+
+        function updateStep1Status(isDone) {
+            wireLoopResult.done = isDone;
+            document.getElementById('step1-status').classList.toggle('hidden', !isDone);
+            checkAllDone();
+        }
+
+        function resetStep1() {
+            document.getElementById('step1-result-display').classList.add('hidden');
+            document.getElementById('step1-manual-form').classList.remove('hidden');
+            document.getElementById('input-time').value = '';
+            document.getElementById('input-errors').value = '';
+            updateStep1Status(false);
+        }
+
+        // --- Whack-a-Mole Game Logic (Step 2) ---
+        const holes = document.querySelectorAll('.hole');
+        const scoreBoard = document.querySelector('#game-score');
+        const timeDisplay = document.querySelector('#game-time');
+        const startBtn = document.querySelector('#start-game-btn');
+        let lastHole, timeUp = false, score = 0, timeLeft = 10, countdownInterval;
+
+        function randomTime(min, max) { return Math.round(Math.random() * (max - min) + min); }
+        function randomHole(holes) {
+            const idx = Math.floor(Math.random() * holes.length);
+            const hole = holes[idx];
+            if (hole === lastHole) return randomHole(holes);
+            lastHole = hole;
+            return hole;
+        }
+        function peep() {
+            const time = randomTime(400, 900);
+            const hole = randomHole(holes);
+            const mole = hole.querySelector('.mole');
+            mole.classList.add('up');
+            setTimeout(() => {
+                mole.classList.remove('up');
+                if (!timeUp) peep();
+            }, time);
+        }
+        function startGame() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            scoreBoard.textContent = 0; timeDisplay.textContent = 10;
+            timeUp = false; score = 0; timeLeft = 10;
+
+            startBtn.disabled = true; startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            startBtn.innerText = "Đang chơi...";
+            document.getElementById('step2-status').classList.add('hidden');
+
+            peep();
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    timeUp = true;
+                    startBtn.disabled = false; startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    startBtn.innerText = "Chơi Lại";
+
+                    whackResult.score = score;
+                    whackResult.done = true;
+                    document.getElementById('step2-status').classList.remove('hidden');
+                    checkAllDone();
+                }
+            }, 1000);
+        }
+
+        function bonk(e) {
+            if (!e.isTrusted) return;
+            const mole = this.querySelector('.mole');
+            if (mole.classList.contains('up')) {
+                score++;
+                mole.classList.remove('up');
+                scoreBoard.textContent = score;
+                this.classList.add('scale-95');
+                setTimeout(() => this.classList.remove('scale-95'), 100);
+            }
+        }
+        holes.forEach(hole => hole.addEventListener('mousedown', bonk));
+        holes.forEach(hole => hole.addEventListener('touchstart', (e) => { e.preventDefault(); bonk.call(hole, e); }));
+
+        // --- Final Submission ---
+        function checkAllDone() {
+            const btn = document.getElementById('get-result-btn');
+            if (wireLoopResult.done && whackResult.done) {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.disabled = false;
+            } else {
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.disabled = true;
+            }
+        }
+
+        async function getFinalAdvice() {
+            const t = parseFloat(document.getElementById('input-time').value);
+            const e = parseInt(document.getElementById('input-errors').value);
+            const s = whackResult.score;
+
+            if (isNaN(t) || isNaN(e)) {
+                alert("Vui lòng kiểm tra lại kết quả bài 1!");
+                return;
+            }
+
+            try {
+                document.getElementById('get-result-btn').innerText = "⏳ Đang phân tích...";
+
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ time: t, errors: e, score: s })
+                });
+                const data = await response.json();
+
+                if (data.error) { alert('Lỗi: ' + data.error); return; }
+
+                // Display
+                const groupEl = document.getElementById('group-result');
+                groupEl.innerText = data.group;
+                groupEl.className = "text-5xl font-black mb-2 " + (data.group === 'A' ? "text-blue-500" : data.group === 'B' ? "text-emerald-500" : "text-purple-500");
+
+                let desc = "";
+                if (data.group === 'A') {
+                    desc = "Người điều hành: Phản xạ thần tốc & Kiểm soát tình huống tuyệt vời.";
+                } else if (data.group === 'B') {
+                    desc = "Nghệ nhân: Đôi tay khéo léo, tỉ mỉ & Sự tập trung bền bỉ.";
+                } else {
+                    desc = "Nhà chiến lược: Thiên hướng Tư duy quản lý & Phân tích (ít thiên về thao tác).";
+                }
+                document.getElementById('desc-result').innerText = desc;
+
+                const list = document.getElementById('career-list');
+                list.innerHTML = '';
+                data.careers.forEach(c => {
+                    list.innerHTML += `<li class="p-3 bg-slate-900 rounded-lg border border-slate-700 flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>${c}
+                    </li>`
+                });
+
+                document.getElementById('result-card').classList.remove('hidden');
+                document.getElementById('result-card').scrollIntoView({ behavior: "smooth" });
+
+                document.getElementById('get-result-btn').innerText = "📊 Phân Tích & Xem Kết Quả";
+
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi kết nối server!');
+                document.getElementById('get-result-btn').innerText = "📊 Phân Tích & Xem Kết Quả";
+            }
+        }
+
+    </script>
+</body>
+
+</html>
