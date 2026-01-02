@@ -14,7 +14,7 @@ import hmac
 
 # Load env before importing services that rely on it
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from career_counselor_chat.service import career_service
 
@@ -61,6 +61,10 @@ UNRESTRICTED_ENDPOINTS = ('static', 'access_gate', 'health_check')
 TEST_USER_ID = "web_chat_user"
 BEST_STEP1_SESSION_KEY = "best_step1"
 BEST_REFLEX_SESSION_KEY = "best_reflex"
+CHAT_HISTORY_SESSION_KEY = "chat_history"
+CAREER_SUMMARY_SESSION_KEY = "career_summary"
+CHARACTERISTIC_READY_SESSION_KEY = "characteristic_ready"
+CHAT_DONE_SESSION_KEY = "chat_done"
 
 def has_access():
     return session.get('access_granted') is True
@@ -84,6 +88,9 @@ def block_home_during_tests():
         return
     if session.get('tests_in_progress') and not session.get('tests_completed'):
         if request.endpoint == 'home':
+            if request.args.get('abandon') == '1':
+                _reset_session_state()
+                return
             return redirect(url_for('test_page'))
 
 @app.route('/access', methods=['GET', 'POST'])
@@ -144,6 +151,8 @@ def test_page():
         tests_completed=session.get('tests_completed', False),
         best_step1=session.get(BEST_STEP1_SESSION_KEY),
         best_reflex=session.get(BEST_REFLEX_SESSION_KEY),
+        characteristic_ready=session.get(CHARACTERISTIC_READY_SESSION_KEY, False),
+        chat_done=session.get(CHAT_DONE_SESSION_KEY, False),
     )
 
 @app.route('/predict', methods=['POST'])
@@ -181,19 +190,22 @@ def generate_final_report():
     if not student_profile:
         return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
 
-    payload = request.json or {}
-    prediction = {
-        'group': payload.get('group'),
-        'careers': payload.get('careers') or [],
-        'summary': payload.get('summary') or ''
-    }
-    if not prediction['group']:
-        return jsonify({'error': 'Thiếu dữ liệu dự đoán.'}), 400
+    chat_history = session.get(CHAT_HISTORY_SESSION_KEY, [])
+    if not chat_history:
+        return jsonify({
+            'error': 'Chưa có lịch sử trò chuyện. Hãy trò chuyện với AI trước khi tạo báo cáo.'
+        }), 400
+    if not session.get(BEST_STEP1_SESSION_KEY) or not session.get(BEST_REFLEX_SESSION_KEY):
+        return jsonify({
+            'error': (
+                'Thiếu kết quả bài test. Hãy hoàn thành Wire Loop và Reflex Test trước khi tạo báo cáo.'
+            )
+        }), 400
 
     try:
         report = career_service.generate_final_report(
             student_profile=student_profile,
-            prediction=prediction,
+            chat_history=chat_history,
             user_id=TEST_USER_ID,
         )
         session['tests_in_progress'] = False
@@ -205,6 +217,41 @@ def generate_final_report():
         app.logger.exception("Failed to generate final report")
         return jsonify({'error': 'Không thể tạo báo cáo cuối.'}), 500
 
+@app.route('/api/university_recommendations', methods=['POST'])
+def university_recommendations():
+    student_profile = session.get('student_info')
+    if not student_profile:
+        return jsonify({'error': 'Chưa có thông tin học sinh.'}), 400
+    chat_history = session.get(CHAT_HISTORY_SESSION_KEY, [])
+    if not chat_history:
+        return jsonify({'error': 'Chưa có lịch sử trò chuyện.'}), 400
+
+    career_summary = session.get(CAREER_SUMMARY_SESSION_KEY)
+    if not career_summary:
+        try:
+            career_summary = career_service.generate_career_summary(
+                student_profile=student_profile,
+                chat_history=chat_history,
+                user_id=TEST_USER_ID,
+            )
+            session[CAREER_SUMMARY_SESSION_KEY] = career_summary
+        except Exception as exc:
+            app.logger.exception("Failed to generate career summary for university search")
+            return jsonify({'error': 'Không thể tạo tóm tắt nghề nghiệp.'}), 500
+
+    try:
+        recommendations = career_service.generate_university_recommendations(
+            career_summary=career_summary,
+            student_profile=student_profile,
+            user_id=TEST_USER_ID,
+        )
+        return jsonify({'recommendations': recommendations})
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except Exception as exc:
+        app.logger.exception("Failed to generate university recommendations")
+        return jsonify({'error': 'Không thể tìm đại học phù hợp.'}), 500
+
 @app.route('/chat', methods=['POST'])
 def chat_with_ai():
     """Simple chatbot endpoint used by the UI modal."""
@@ -212,6 +259,12 @@ def chat_with_ai():
     payload = request.json or {}
     message = (payload.get('message') or '').strip()
     student_profile = session.get('student_info')
+    if session.get(CHAT_DONE_SESSION_KEY):
+        return jsonify({
+            'reply': 'Phần trò chuyện đã hoàn tất. Bạn có thể xem báo cáo hoặc gợi ý đại học nhé.',
+            'chat_done': True,
+            'characteristic_ready': session.get(CHARACTERISTIC_READY_SESSION_KEY, False),
+        })
 
     if not message:
         return jsonify({'error': 'Missing message'}), 400
@@ -227,8 +280,40 @@ def chat_with_ai():
                 f"Nội dung: {message}"
             )
             enriched_message = info_str
+        session.pop(CAREER_SUMMARY_SESSION_KEY, None)
         agent_reply = career_service.ask(enriched_message, user_id=TEST_USER_ID).text
-        return jsonify({'reply': agent_reply})
+        parsed_reply = agent_reply
+        try:
+            reply_data = json.loads(agent_reply)
+            parsed_reply = (
+                reply_data.get("response", {}).get("result")
+                or reply_data.get("result")
+                or agent_reply
+            )
+        except (TypeError, ValueError):
+            pass
+        characteristic_ready = career_service.is_characteristic_ready(parsed_reply)
+        chat_done = career_service.is_chat_done(parsed_reply)
+        if characteristic_ready:
+            session[CHARACTERISTIC_READY_SESSION_KEY] = True
+        chat_history = session.get(CHAT_HISTORY_SESSION_KEY, [])
+        chat_history.append({"role": "user", "text": message})
+        chat_history.append({"role": "assistant", "text": parsed_reply})
+        session[CHAT_HISTORY_SESSION_KEY] = chat_history
+        if not chat_done:
+            for entry in chat_history:
+                if entry.get("role") == "assistant" and career_service.is_chat_done(
+                    entry.get("text", "")
+                ):
+                    chat_done = True
+                    break
+        if chat_done:
+            session[CHAT_DONE_SESSION_KEY] = True
+        return jsonify({
+            'reply': agent_reply,
+            'characteristic_ready': characteristic_ready,
+            'chat_done': chat_done,
+        })
     except Exception as exc:
         # Fallback to deterministic responses so the UI isn't blocked
         app.logger.exception("Career agent failed, returning fallback response")
@@ -266,6 +351,10 @@ def save_student_info():
         'class_name': class_name,
         'age': age
     }
+    session.pop(CHAT_HISTORY_SESSION_KEY, None)
+    session.pop(CAREER_SUMMARY_SESSION_KEY, None)
+    session.pop(CHARACTERISTIC_READY_SESSION_KEY, None)
+    session.pop(CHAT_DONE_SESSION_KEY, None)
 
     return jsonify({'message': 'Đã lưu thông tin học sinh.', 'student_info': session['student_info']}), 200
 
@@ -366,6 +455,10 @@ def _reset_session_state():
     session.pop('tests_completed', None)
     session.pop(BEST_STEP1_SESSION_KEY, None)
     session.pop(BEST_REFLEX_SESSION_KEY, None)
+    session.pop(CHAT_HISTORY_SESSION_KEY, None)
+    session.pop(CAREER_SUMMARY_SESSION_KEY, None)
+    session.pop(CHARACTERISTIC_READY_SESSION_KEY, None)
+    session.pop(CHAT_DONE_SESSION_KEY, None)
     career_service.reset_test_metrics(user_id=TEST_USER_ID)
 
 

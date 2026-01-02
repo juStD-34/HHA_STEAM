@@ -59,9 +59,10 @@ def build_agent() -> LlmAgent:
 
     Đây là entrypoint mà lệnh `adk run career_counselor_agent` sẽ gọi.
     Orchestrator nói chuyện trực tiếp với học sinh và dùng các sub-agent:
-    - CareerAgent: quyết định đã đủ dữ liệu để gợi ý nghề chưa
+    - CareerAgent: quyết định đã đủ dữ liệu để mô tả đặc điểm DISC chưa
     - QuizDeciderAgent: chọn câu hỏi DISC tiếp theo nếu cần hỏi thêm
-    - ReportAgent: ghép kết quả tư vấn nghề với số liệu bài test để tạo báo cáo cuối
+    - ReportAgent: tạo báo cáo cuối dựa trên tóm tắt + kết quả bài test
+    - UniversitySearchAgent: gợi ý đại học theo ngành học
     """
     model = DEFAULT_MODEL
 
@@ -70,7 +71,6 @@ def build_agent() -> LlmAgent:
     quiz_decider_agent = build_quiz_decider_agent(model=model)
     report_agent = build_report_agent(model=model)
     university_search_agent = build_university_search_agent(model=model)
-
     # Instruction dùng chung từ file root_agent.md
     try:
         instruction = _read_root_agent_instruction()
@@ -93,7 +93,7 @@ def build_agent() -> LlmAgent:
         description=(
             "Root orchestrator for DISC-based career counseling. "
             "Talks directly with the student in Vietnamese and uses "
-            "CareerAgent + QuizDeciderAgent + ReportAgent as tools."
+            "CareerAgent + QuizDeciderAgent + ReportAgent + UniversitySearchAgent as tools."
         ),
         instruction=instruction,
         tools=[

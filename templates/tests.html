@@ -190,15 +190,14 @@
                 </p>
             </div>
             <div class="flex flex-col items-center md:items-end gap-1 text-center md:text-right">
-                {% set locked = not tests_completed %}
                 <a id="home-link" href="{{ url_for('home') }}"
-                    class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition {{ 'opacity-60 cursor-not-allowed pointer-events-none' if locked else 'hover:text-emerald-200' }}"
-                    aria-disabled="{{ 'true' if locked else 'false' }}">
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                    aria-disabled="false">
                     <span aria-hidden="true">←</span> Về trang chủ
                 </a>
                 <p id="home-lock-message"
-                    class="text-xs text-rose-300 {{ 'hidden' if not locked else '' }}">
-                    Hoàn thành báo cáo để quay lại trang chủ.
+                    class="text-xs text-rose-300 {{ 'hidden' if tests_completed else '' }}">
+                    Rời trang sẽ làm mất dữ liệu bài test đang thực hiện.
                 </p>
             </div>
         </div>
@@ -493,9 +492,14 @@
 
         <!-- Final Result Section -->
         <button onclick="getFinalAdvice()" id="get-result-btn"
-            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-1">
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-1 opacity-50"
+            disabled>
             📘 Get Final Report
         </button>
+        <div id="characteristic-status"
+            class="hidden mt-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            ✅ Bạn đã hoàn thành phần DISC. Bạn có thể bấm “Get Final Report” để xem báo cáo.
+        </div>
 
         <div id="result-card"
             class="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-700 hidden">
@@ -553,6 +557,21 @@
             </div>
         </div>
 
+        <div class="mt-6 space-y-3">
+            <button onclick="getUniversitySuggestions()" id="get-university-btn"
+                class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-4 rounded-xl text-lg font-bold shadow-xl shadow-emerald-500/20 transition-all transform hover:-translate-y-1">
+                🎓 Get University Suggestions
+            </button>
+            <div id="university-card"
+                class="hidden bg-slate-900/70 border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">🎓 Đại học phù hợp</h3>
+                    <span id="university-status" class="text-xs text-slate-400 uppercase tracking-[0.2em]">Đang xử lý</span>
+                </div>
+                <pre id="university-content" class="whitespace-pre-wrap text-slate-100 text-sm leading-relaxed">--</pre>
+            </div>
+        </div>
+
     </div>
 
     <!-- Floating Chat Button -->
@@ -579,6 +598,10 @@
                     </div>
                     <button onclick="closeChatModal()"
                         class="text-slate-400 hover:text-white transition-colors text-xl">&times;</button>
+                </div>
+                <div id="chat-done-banner"
+                    class="hidden mx-4 mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                    ✅ Mình đã hoàn thành phần kết luận. Bạn có thể xem báo cáo và gợi ý đại học.
                 </div>
                 <div class="p-4 max-h-[60vh] overflow-y-auto" id="chat-messages">
                     <!-- Messages injected via JS -->
@@ -647,6 +670,14 @@
         const reportClassEl = document.getElementById('report-class');
         const reportFitJobEl = document.getElementById('report-fit-job');
         const reportExplanationEl = document.getElementById('report-explanation');
+        const characteristicStatusEl = document.getElementById('characteristic-status');
+        const universityBtn = document.getElementById('get-university-btn');
+        const universityCard = document.getElementById('university-card');
+        const universityStatus = document.getElementById('university-status');
+        const universityContent = document.getElementById('university-content');
+        const chatDoneBanner = document.getElementById('chat-done-banner');
+        let characteristicReady = {{ 'true' if characteristic_ready else 'false' }};
+        let chatDone = {{ 'true' if chat_done else 'false' }};
         const reflexTimeRemainingEl = document.getElementById('reflex-time-remaining');
         const reflexScoreEl = document.getElementById('reflex-score');
         const reflexStatusEl = document.getElementById('reflex-status');
@@ -672,16 +703,12 @@
         function updateHomeLinkState() {
             if (!homeLink) return;
             if (testsCompleted) {
-                homeLink.classList.remove('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
-                homeLink.classList.add('hover:text-emerald-200');
                 homeLink.setAttribute('aria-disabled', 'false');
                 if (homeLockMessage) {
                     homeLockMessage.classList.add('hidden');
                 }
             } else {
-                homeLink.classList.add('opacity-60', 'cursor-not-allowed', 'pointer-events-none');
-                homeLink.classList.remove('hover:text-emerald-200');
-                homeLink.setAttribute('aria-disabled', 'true');
+                homeLink.setAttribute('aria-disabled', 'false');
                 if (homeLockMessage) {
                     homeLockMessage.classList.remove('hidden');
                 }
@@ -784,8 +811,15 @@
         if (homeLink) {
             homeLink.addEventListener('click', (event) => {
                 if (!testsCompleted) {
+                    const ok = confirm(
+                        'Bạn đang rời trang khi bài test chưa hoàn tất. Dữ liệu hiện tại sẽ bị mất. Bạn có chắc muốn quay lại trang chủ không?'
+                    );
+                    if (!ok) {
+                        event.preventDefault();
+                        return;
+                    }
                     event.preventDefault();
-                    alert('Hoàn thành báo cáo để quay lại trang chủ.');
+                    window.location.href = `${homeLink.href}?abandon=1`;
                 }
             });
         }
@@ -1078,8 +1112,8 @@
         function checkAllDone() {
             const btn = document.getElementById('get-result-btn');
             if (!btn) return;
-            const ready = wireLoopResult.done && whackResult.done;
-            btn.classList.toggle('opacity-50', !ready);
+            btn.classList.remove('opacity-50');
+            btn.disabled = false;
         }
 
         async function getFinalAdvice() {
@@ -1089,9 +1123,19 @@
                 return;
             }
 
+            if (!chatDone) {
+                const proceed = confirm(
+                    "Bạn chưa hoàn thành phần trò chuyện DISC. Báo cáo có thể không chính xác.\n\nNhấn OK để lấy báo cáo, hoặc Cancel để quay lại trò chuyện."
+                );
+                if (!proceed) {
+                    return;
+                }
+            }
             const allDone = wireLoopResult.done && whackResult.done;
             if (!allDone) {
-                const proceed = confirm("Bạn chưa hoàn thành tất cả bài kiểm tra. Báo cáo có thể không chính xác. Bạn có muốn tiếp tục?");
+                const proceed = confirm(
+                    "Bạn chưa hoàn thành tất cả bài test. Báo cáo có thể không chính xác.\n\nNhấn OK để lấy báo cáo, hoặc Cancel để tiếp tục làm bài."
+                );
                 if (!proceed) {
                     return;
                 }
@@ -1101,11 +1145,6 @@
             const e = parseInt(document.getElementById('input-errors').value);
             const s = whackResult.score;
 
-            if (isNaN(t) || isNaN(e)) {
-                alert("Vui lòng kiểm tra lại kết quả bài 1!");
-                return;
-            }
-
             const reportBtn = document.getElementById('get-result-btn');
 
             try {
@@ -1113,48 +1152,47 @@
                     reportBtn.innerText = "⏳ Đang phân tích...";
                 }
 
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ time: t, errors: e, score: s })
-                });
-                const data = await response.json();
+                if (!isNaN(t) && !isNaN(e)) {
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ time: t, errors: e, score: s })
+                    });
+                    const data = await response.json();
 
-                if (data.error) { alert('Lỗi: ' + data.error); return; }
+                    if (data.error) { alert('Lỗi: ' + data.error); return; }
 
-                // Display prediction summary
-                const groupEl = document.getElementById('group-result');
-                groupEl.innerText = data.group;
-                groupEl.className = "text-5xl font-black mb-2 " + (data.group === 'A' ? "text-blue-500" : data.group === 'B' ? "text-emerald-500" : "text-purple-500");
+                    // Display prediction summary
+                    const groupEl = document.getElementById('group-result');
+                    groupEl.innerText = data.group;
+                    groupEl.className = "text-5xl font-black mb-2 " + (data.group === 'A' ? "text-blue-500" : data.group === 'B' ? "text-emerald-500" : "text-purple-500");
 
-                let desc = "";
-                if (data.group === 'A') {
-                    desc = "Người điều hành: Phản xạ thần tốc & Kiểm soát tình huống tuyệt vời.";
-                } else if (data.group === 'B') {
-                    desc = "Nghệ nhân: Đôi tay khéo léo, tỉ mỉ & Sự tập trung bền bỉ.";
-                } else {
-                    desc = "Nhà chiến lược: Thiên hướng Tư duy quản lý & Phân tích (ít thiên về thao tác).";
+                    let desc = "";
+                    if (data.group === 'A') {
+                        desc = "Người điều hành: Phản xạ thần tốc & Kiểm soát tình huống tuyệt vời.";
+                    } else if (data.group === 'B') {
+                        desc = "Nghệ nhân: Đôi tay khéo léo, tỉ mỉ & Sự tập trung bền bỉ.";
+                    } else {
+                        desc = "Nhà chiến lược: Thiên hướng Tư duy quản lý & Phân tích (ít thiên về thao tác).";
+                    }
+                    document.getElementById('desc-result').innerText = desc;
+
+                    const list = document.getElementById('career-list');
+                    list.innerHTML = '';
+                    data.careers.forEach(c => {
+                        list.innerHTML += `<li class="p-3 bg-slate-900 rounded-lg border border-slate-700 flex items-center gap-3">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>${c}
+                        </li>`
+                    });
+
+                    document.getElementById('result-card').classList.remove('hidden');
+                    document.getElementById('result-card').scrollIntoView({ behavior: "smooth" });
                 }
-                document.getElementById('desc-result').innerText = desc;
-
-                const list = document.getElementById('career-list');
-                list.innerHTML = '';
-                data.careers.forEach(c => {
-                    list.innerHTML += `<li class="p-3 bg-slate-900 rounded-lg border border-slate-700 flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>${c}
-                    </li>`
-                });
-
-                document.getElementById('result-card').classList.remove('hidden');
-                document.getElementById('result-card').scrollIntoView({ behavior: "smooth" });
 
                 if (reportBtn) {
                     reportBtn.innerText = "⏳ Đang tạo báo cáo...";
                 }
-                await generateFinalReport(
-                    { group: data.group, careers: data.careers },
-                    desc
-                );
+                await generateFinalReport();
                 if (reportBtn) {
                     reportBtn.innerText = "📘 Get Final Report";
                 }
@@ -1168,7 +1206,7 @@
             }
         }
 
-        async function generateFinalReport(predictionData, summaryText) {
+        async function generateFinalReport() {
             if (reportCard) {
                 reportCard.classList.remove('hidden');
             }
@@ -1179,11 +1217,7 @@
                 const response = await fetch('/api/final_report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        group: predictionData.group,
-                        careers: predictionData.careers,
-                        summary: summaryText
-                    })
+                    body: JSON.stringify({})
                 });
                 const payload = await response.json();
                 if (!response.ok || payload.error) {
@@ -1198,6 +1232,10 @@
                 if (reportStatus) {
                     reportStatus.textContent = "Hoàn tất";
                 }
+                if (universityBtn) {
+                    universityBtn.disabled = false;
+                    universityBtn.classList.remove('opacity-50');
+                }
                 testsCompleted = true;
                 updateHomeLinkState();
             } catch (err) {
@@ -1208,12 +1246,73 @@
             }
         }
 
+        async function getUniversitySuggestions() {
+            if (!studentInfo) {
+                alert("Vui lòng nhập thông tin học sinh trước khi xem gợi ý đại học.");
+                showStudentInfoModal();
+                return;
+            }
+            if (!chatDone) {
+                const proceed = confirm(
+                    "Bạn chưa hoàn thành phần trò chuyện DISC. Gợi ý có thể không chính xác.\n\nNhấn OK để tiếp tục, hoặc Cancel để quay lại trò chuyện."
+                );
+                if (!proceed) {
+                    return;
+                }
+            }
+            const allDone = wireLoopResult.done && whackResult.done;
+            if (!allDone) {
+                const proceed = confirm(
+                    "Bạn chưa hoàn thành tất cả bài test. Gợi ý có thể không chính xác.\n\nNhấn OK để tiếp tục, hoặc Cancel để tiếp tục làm bài."
+                );
+                if (!proceed) {
+                    return;
+                }
+            }
+            if (universityCard) {
+                universityCard.classList.remove('hidden');
+            }
+            if (universityStatus) {
+                universityStatus.textContent = "Đang xử lý";
+            }
+            try {
+                const response = await fetch('/api/university_recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const payload = await response.json();
+                if (!response.ok || payload.error) {
+                    throw new Error(payload.error || 'Không thể tìm đại học phù hợp.');
+                }
+                if (universityContent) {
+                    universityContent.textContent = payload.recommendations || '--';
+                }
+                if (universityStatus) {
+                    universityStatus.textContent = "Hoàn tất";
+                }
+                universityCard.scrollIntoView({ behavior: "smooth" });
+            } catch (err) {
+                if (universityStatus) {
+                    universityStatus.textContent = "Lỗi";
+                }
+                alert(err.message || 'Lỗi kết nối server!');
+            }
+        }
+
         // --- Chatbot Modal ---
         function openChatModal() {
             chatModal.classList.remove('hidden');
             if (!chatInitialized) {
                 appendChatMessage('bot', 'Xin chào! Tôi có thể giải đáp thắc mắc về quy trình kiểm tra và gợi ý nghề nghiệp.');
                 chatInitialized = true;
+            }
+            if (chatDone) {
+                if (chatDoneBanner) {
+                    chatDoneBanner.classList.remove('hidden');
+                }
+                chatInput.disabled = true;
+                chatSendBtn.disabled = true;
             }
             setTimeout(() => chatInput.focus(), 100);
         }
@@ -1258,6 +1357,10 @@
 
         async function sendChatMessage() {
             if (chatWaiting) return;
+            if (chatDone) {
+                appendChatMessage('bot', 'Phần trò chuyện đã hoàn tất. Bạn có thể xem báo cáo hoặc gợi ý đại học nhé.');
+                return;
+            }
             const message = chatInput.value.trim();
             if (!message) return;
 
@@ -1276,6 +1379,22 @@
                     appendChatMessage('bot', 'Xin lỗi, tôi chưa nhận được câu hỏi. Vui lòng thử lại nhé!');
                 } else {
                     appendChatMessage('bot', data.reply);
+                    if (data.characteristic_ready) {
+                        characteristicReady = true;
+                        if (characteristicStatusEl) {
+                            characteristicStatusEl.classList.remove('hidden');
+                        }
+                        checkAllDone();
+                    }
+                    const replyText = data.reply || '';
+                    if (data.chat_done || replyText.toLowerCase().includes('kết luận cuối')) {
+                        chatDone = true;
+                        if (chatDoneBanner) {
+                            chatDoneBanner.classList.remove('hidden');
+                        }
+                        chatInput.disabled = true;
+                        chatSendBtn.disabled = true;
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -1294,6 +1413,14 @@
 
         setStep1Best(bestStep1);
         setReflexBest(reflexBestScore);
+        if (characteristicReady && characteristicStatusEl) {
+            characteristicStatusEl.classList.remove('hidden');
+        }
+        if (chatDone && chatDoneBanner) {
+            chatDoneBanner.classList.remove('hidden');
+            chatInput.disabled = true;
+            chatSendBtn.disabled = true;
+        }
         checkAllDone();
         updateHomeLinkState();
         if (studentInfo && studentInfo.age) {
