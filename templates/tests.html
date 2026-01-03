@@ -393,7 +393,7 @@
                     </div>
                     <p id="reflex-best-display"
                         class="hidden text-xs text-amber-200 font-semibold text-center">
-                        🏅 Điểm cao nhất: <span id="reflex-best-score">0</span>
+                        🏅 Điểm gần nhất: <span id="reflex-best-score">0</span>
                     </p>
                 </div>
 
@@ -788,26 +788,23 @@
                 updateStep1Status(false);
             } else if (data.status === 'finished' && data.timestamp > lastTimestamp) {
                 lastTimestamp = data.timestamp;
-                const bestData = data.best || { time: data.time, errors: data.errors };
-                bestStep1 = bestData;
-                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
-                document.getElementById('input-time').value = bestData.time;
-                document.getElementById('input-errors').value = bestData.errors;
-                document.getElementById('display-time').innerText = bestData.time;
-                document.getElementById('display-errors').innerText = bestData.errors;
-                wireLoopResult.time = bestData.time;
-                wireLoopResult.errors = bestData.errors;
+                const latestData = { time: data.time, errors: data.errors };
+                bestStep1 = latestData;
+                sessionStorage.setItem('best_step1', JSON.stringify(latestData));
+                document.getElementById('input-time').value = latestData.time;
+                document.getElementById('input-errors').value = latestData.errors;
+                document.getElementById('display-time').innerText = latestData.time;
+                document.getElementById('display-errors').innerText = latestData.errors;
+                wireLoopResult.time = latestData.time;
+                wireLoopResult.errors = latestData.errors;
                 wireLoopResult.done = true;
-                setStep1Best(bestData);
+                setStep1Best(latestData);
                 showLiveMonitor(false);
                 document.getElementById('step1-manual-form').classList.add('hidden');
                 document.getElementById('step1-result-display').classList.remove('hidden');
                 updateStep1Status(true);
                 if (typeof data.improved === 'boolean') {
-                    const successMsg = data.improved
-                        ? "🎉 Kỷ lục mới cho Wire Loop!"
-                        : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
-                    setInlineMessage(step1MessageEl, successMsg, false);
+                    setInlineMessage(step1MessageEl, "ℹ️ Đã lưu kết quả.", false);
                 }
             }
         });
@@ -874,27 +871,24 @@
                 if (!response.ok || data.error) {
                     throw new Error(data.error || 'Không thể lưu kết quả.');
                 }
-                const bestData = data.best || { time: timeVal, errors: errorVal };
-                console.log('[wireloop] submit response', { data, bestData });
-                bestStep1 = bestData;
-                wireLoopResult.time = bestData.time;
-                wireLoopResult.errors = bestData.errors;
+                const latestData = { time: timeVal, errors: errorVal };
+                console.log('[wireloop] submit response', { data, latestData });
+                bestStep1 = latestData;
+                wireLoopResult.time = latestData.time;
+                wireLoopResult.errors = latestData.errors;
                 wireLoopResult.done = true;
-                console.log('[wireloop] sessionStorage set best_step1', bestData);
-                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                console.log('[wireloop] sessionStorage set best_step1', latestData);
+                sessionStorage.setItem('best_step1', JSON.stringify(latestData));
                 console.log('[wireloop] sessionStorage get best_step1', sessionStorage.getItem('best_step1'));
-                inputTime.value = bestData.time;
-                inputErrors.value = bestData.errors;
-                document.getElementById('display-time').innerText = bestData.time;
-                document.getElementById('display-errors').innerText = bestData.errors;
+                inputTime.value = latestData.time;
+                inputErrors.value = latestData.errors;
+                document.getElementById('display-time').innerText = latestData.time;
+                document.getElementById('display-errors').innerText = latestData.errors;
                 document.getElementById('step1-manual-form').classList.add('hidden');
                 document.getElementById('step1-result-display').classList.remove('hidden');
                 updateStep1Status(true);
-                setStep1Best(bestData);
-                const successMsg = data.improved
-                    ? "🎉 Kỷ lục mới cho Wire Loop!"
-                    : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
-                setInlineMessage(step1MessageEl, successMsg, false);
+                setStep1Best(latestData);
+                setInlineMessage(step1MessageEl, "ℹ️ Đã lưu kết quả.", false);
                 setStep1InputsDisabled(true);
             } catch (err) {
                 setInlineMessage(step1MessageEl, err.message || 'Có lỗi xảy ra.', true);
@@ -922,16 +916,16 @@
                 if (!response.ok || data.error) {
                     throw new Error(data.error || 'Không thể lưu kết quả.');
                 }
-                const bestData = data.best || { time: timeVal, errors: errorVal };
-                console.log('[wireloop] autosave response', { data, bestData });
-                bestStep1 = bestData;
-                wireLoopResult.time = bestData.time;
-                wireLoopResult.errors = bestData.errors;
+                const latestData = { time: timeVal, errors: errorVal };
+                console.log('[wireloop] autosave response', { data, latestData });
+                bestStep1 = latestData;
+                wireLoopResult.time = latestData.time;
+                wireLoopResult.errors = latestData.errors;
                 wireLoopResult.done = true;
-                console.log('[wireloop] autosave sessionStorage set best_step1', bestData);
-                sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                console.log('[wireloop] autosave sessionStorage set best_step1', latestData);
+                sessionStorage.setItem('best_step1', JSON.stringify(latestData));
                 console.log('[wireloop] autosave sessionStorage get best_step1', sessionStorage.getItem('best_step1'));
-                setStep1Best(bestData);
+                setStep1Best(latestData);
                 return true;
             } catch (err) {
                 setInlineMessage(step1MessageEl, err.message || 'Có lỗi xảy ra.', true);
@@ -1100,24 +1094,17 @@
             setInlineMessage(step2MessageEl, "⏳ Đang gửi kết quả...", false);
             try {
                 const payload = await saveReflexResult(REFLEX_DURATION_SECONDS, reflexScore);
-                const bestData = payload.best || { quantity: reflexScore, time: REFLEX_DURATION_SECONDS };
-                bestReflex = bestData;
-                sessionStorage.setItem('best_reflex', JSON.stringify(bestData));
-                reflexBestScore = bestData.quantity || reflexScore;
+                const latestData = { quantity: reflexScore, time: REFLEX_DURATION_SECONDS };
+                bestReflex = latestData;
+                sessionStorage.setItem('best_reflex', JSON.stringify(latestData));
+                reflexBestScore = latestData.quantity || reflexScore;
                 whackResult.score = reflexBestScore;
                 whackResult.done = true;
                 document.getElementById('step2-status').classList.remove('hidden');
                 checkAllDone();
                 setReflexBest(reflexBestScore);
-                const successMsg = payload.improved
-                    ? `🎉 Kỷ lục mới: ${reflexBestScore} chuột!`
-                    : "ℹ️ Đã lưu kết quả (chưa vượt kỷ lục).";
-                setInlineMessage(step2MessageEl, successMsg, false);
-                setReflexStatus(
-                    payload.improved
-                        ? `Hoàn tất! Điểm mới: ${reflexBestScore}`
-                        : `Hoàn tất! Kỷ lục hiện tại: ${reflexBestScore}`
-                );
+                setInlineMessage(step2MessageEl, "ℹ️ Đã lưu kết quả.", false);
+                setReflexStatus(`Hoàn tất! Điểm gần nhất: ${reflexBestScore}`);
             } catch (err) {
                 setInlineMessage(step2MessageEl, err.message || 'Có lỗi xảy ra.', true);
                 setReflexStatus("Gửi dữ liệu thất bại. Vui lòng thử lại.");
