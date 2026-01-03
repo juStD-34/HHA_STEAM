@@ -845,9 +845,11 @@
             const timeVal = parseFloat(inputTime.value);
             const errorVal = parseInt(inputErrors.value);
             if (isNaN(timeVal) || isNaN(errorVal)) {
+                console.warn('[wireloop] invalid input', { timeVal, errorVal });
                 setInlineMessage(step1MessageEl, "Vui lòng nhập đủ thời gian và số lỗi.", true);
                 return;
             }
+            console.log('[wireloop] submit start', { timeVal, errorVal });
             setInlineMessage(step1MessageEl, "⏳ Đang gửi kết quả...", false);
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
@@ -862,11 +864,14 @@
                     throw new Error(data.error || 'Không thể lưu kết quả.');
                 }
                 const bestData = data.best || { time: timeVal, errors: errorVal };
+                console.log('[wireloop] submit response', { data, bestData });
                 bestStep1 = bestData;
                 wireLoopResult.time = bestData.time;
                 wireLoopResult.errors = bestData.errors;
                 wireLoopResult.done = true;
+                console.log('[wireloop] sessionStorage set best_step1', bestData);
                 sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                console.log('[wireloop] sessionStorage get best_step1', sessionStorage.getItem('best_step1'));
                 inputTime.value = bestData.time;
                 inputErrors.value = bestData.errors;
                 document.getElementById('display-time').innerText = bestData.time;
@@ -889,11 +894,14 @@
         }
 
         async function saveWireLoopIfNeeded() {
-            if (wireLoopResult.done && bestStep1) return true;
             const timeVal = parseFloat(inputTime.value);
             const errorVal = parseInt(inputErrors.value);
-            if (isNaN(timeVal) || isNaN(errorVal)) return false;
+            if (isNaN(timeVal) || isNaN(errorVal)) {
+                console.warn('[wireloop] autosave invalid input', { timeVal, errorVal });
+                return false;
+            }
             try {
+                console.log('[wireloop] autosave start', { timeVal, errorVal, bestStep1 });
                 const response = await fetch('/api/game_event', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -904,11 +912,14 @@
                     throw new Error(data.error || 'Không thể lưu kết quả.');
                 }
                 const bestData = data.best || { time: timeVal, errors: errorVal };
+                console.log('[wireloop] autosave response', { data, bestData });
                 bestStep1 = bestData;
                 wireLoopResult.time = bestData.time;
                 wireLoopResult.errors = bestData.errors;
                 wireLoopResult.done = true;
+                console.log('[wireloop] autosave sessionStorage set best_step1', bestData);
                 sessionStorage.setItem('best_step1', JSON.stringify(bestData));
+                console.log('[wireloop] autosave sessionStorage get best_step1', sessionStorage.getItem('best_step1'));
                 setStep1Best(bestData);
                 return true;
             } catch (err) {
