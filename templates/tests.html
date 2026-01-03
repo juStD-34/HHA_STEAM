@@ -324,6 +324,13 @@
                             placeholder="0">
                     </div>
                 </div>
+                <div class="mt-4 flex items-center gap-3">
+                    <button id="wire-submit-btn" type="button" onclick="submitWireLoopResult()"
+                        class="hidden bg-blue-500 hover:bg-blue-400 text-slate-900 font-semibold px-5 py-2 rounded-lg transition shadow shadow-blue-500/20">
+                        Gửi
+                    </button>
+                    <p id="step1-api-message" class="hidden text-xs font-semibold"></p>
+                </div>
             </div>
 
             <div id="step1-status"
@@ -586,6 +593,7 @@
         const liveMonitorEl = document.getElementById('live-monitor');
         const liveTimeEl = document.getElementById('live-time');
         const liveErrorsEl = document.getElementById('live-errors');
+        const wireSubmitBtn = document.getElementById('wire-submit-btn');
         let lastDeviceEventAt = 0;
 
         function showStudentInfoModal() {
@@ -743,6 +751,9 @@
             } else {
                 step1DeviceStatusEl.textContent = 'Thiết bị: chưa kết nối';
                 step1DeviceStatusEl.classList.add('text-rose-300');
+            }
+            if (wireSubmitBtn) {
+                wireSubmitBtn.classList.toggle('hidden', connected);
             }
         }
 
