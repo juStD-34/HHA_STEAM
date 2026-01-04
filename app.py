@@ -46,7 +46,7 @@ _bootstrap_google_credentials()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['ACCESS_KEY'] = os.environ.get('APP_ACCESS_KEY', 'enter-demo-key')  # change in production
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 app.register_blueprint(create_api_blueprint(socketio))
 
